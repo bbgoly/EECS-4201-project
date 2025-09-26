@@ -12,12 +12,12 @@
  * 1) 1-bit output res_o
  */
 
- module assign_xor (
-     input logic op1_i,
-     input logic op2_i,
-     output logic res_o
- );
+module assign_xor (
+		input logic op1_i,
+		input logic op2_i,
+		output logic res_o
+	);
 
- assign res_o = op1_i ^ op2_i;
+	assign res_o = op1_i ^ op2_i;
 
- endmodule: assign_xor
+endmodule: assign_xor

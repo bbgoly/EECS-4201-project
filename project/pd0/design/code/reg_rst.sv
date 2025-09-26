@@ -1,4 +1,7 @@
 /*
+ * EECS 4201
+ * Salman Kayani
+ * Yousif Kndkji
  * Module: reg_rst
  *
  * Description: A DWIDTH register implementation with
@@ -15,15 +18,20 @@
  *
  */
 module reg_rst #(
-    parameter int DWIDTH = 32)(
-    input logic clk,
-    input logic rst,
-    input logic [DWIDTH-1:0] in_i,
-    output logic [DWIDTH-1:0] out_o
-);
-    /*
-     * Process definitions to be filled by
-     * student below...
-     */
+    	parameter int DWIDTH = 32)(
+    	input logic clk,
+    	input logic rst,
+    	input logic [DWIDTH-1:0] in_i,
+    	output logic [DWIDTH-1:0] out_o
+	);
 
+	always_ff @(posedge clk) begin
+		if (rst) begin
+			out_o <= '0;
+		end 
+		else begin
+			out_o <= in_i;
+		end
+	end
+	
 endmodule: reg_rst

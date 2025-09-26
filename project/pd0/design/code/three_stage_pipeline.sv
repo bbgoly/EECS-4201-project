@@ -1,4 +1,9 @@
+import constants_pkg::*;
+
 /*
+ * EECS 4201
+ * Salman Kayani
+ * Yousif Kndkji
  * Module: three_stage_pipeline
  *
  * A 3-stage pipeline (TSP) where the first stage performs an addition of two
@@ -27,20 +32,61 @@
  */
 
 module three_stage_pipeline #(
-parameter int DWIDTH = 8)(
+		parameter int DWIDTH = 8)(
         input logic clk,
         input logic rst,
         input logic [DWIDTH-1:0] op1_i,
         input logic [DWIDTH-1:0] op2_i,
         output logic [DWIDTH-1:0] res_o
-    );
+	);
 
-    /*
-     * Process definitions to be filled by
-     * student below...
-     * [HINT] Instantiate the alu and reg_rst modules
-     * and set up the necessary connections
-     *
-     */
+
+	// Stage 1: ALU ADD
+	logic [DWIDTH-1:0] s1_res;
+	logic [DWIDTH-1:0] s1_reg;
+
+	alu #(.DWIDTH(DWIDTH)) alu_add (
+		.sel_i (ADD),
+		.op1_i (op1_i),
+		.op2_i (op2_i),
+		.res_o (s1_res),
+		.zero_o(),	// unused
+		.neg_o()	// unused
+	);
+
+	reg_rst #(.DWIDTH(DWIDTH)) reg_s1 (
+		.clk   (clk),
+		.rst   (rst),
+		.in_i  (s1_res),
+		.out_o (s1_reg)
+	);
+
+	// Stage 2: ALU SUB
+	logic [DWIDTH-1:0] s2_res;
+	logic [DWIDTH-1:0] s2_reg;
+
+	alu #(.DWIDTH(DWIDTH)) alu_sub (
+		.sel_i (SUB),
+		.op1_i (s1_reg),
+		.op2_i (op1_i),
+		.res_o (s2_res),
+		.zero_o(),
+		.neg_o()
+	);
+
+	reg_rst #(.DWIDTH(DWIDTH)) reg_s2 (
+		.clk   (clk),
+		.rst   (rst),
+		.in_i  (s2_res),
+		.out_o (s2_reg)
+	);
+
+	// Stage 3: final register
+	reg_rst #(.DWIDTH(DWIDTH)) reg_s3 (
+		.clk   (clk),
+		.rst   (rst),
+		.in_i  (s2_reg),
+		.out_o (res_o)
+	);
 
 endmodule: three_stage_pipeline
