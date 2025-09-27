@@ -1,4 +1,4 @@
-/*
+/* Salman Kayani
  * Module: fetch
  *
  * Description: Fetch stage
@@ -28,6 +28,34 @@ module fetch #(
      * Process definitions to be filled by
      * student below...
      */
+    // --------------------------
+    // Instruction Memory (ROM)
+    // --------------------------
+    //
+    //
+    logic [DWIDTH-1:0] imem [0:`MEM_DEPTH-1];
+
+    initial begin
+        $readmemh(`MEM_PATH, imem);
+    end
+
+  // --------------------------
+    // Program Counter (PC) logic
+    // --------------------------
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            pc_o <= BASEADDR;              // reset PC to base address
+        end else begin
+            pc_o <= pc_o + 4;              // increment PC by 4 (word aligned)
+        end
+    end
+
+    // --------------------------
+    // Instruction Fetch
+    // --------------------------
+    always_comb begin
+        insn_o = imem[(pc_o - BASEADDR) >> 2];   // fetch instruction at PC
+    end
 
 endmodule : fetch
 				
