@@ -1,4 +1,4 @@
-/*
+/* Salman Kayani
  * Module: memory
  *
  * Description: Byte-addressable memory implementation. Supports both read and write operations.
@@ -33,9 +33,9 @@ module memory #(
   output logic [DWIDTH-1:0] data_o
 );
 
-  logic [DWIDTH-1:0] temp_memory [0:`MEM_DEPTH];
+  logic [DWIDTH-1:0] temp_memory [0:`MEM_DEPTH-1];
   // Byte-addressable memory
-  logic [7:0] main_memory [0:`MEM_DEPTH];  // Byte-addressable memory
+  logic [7:0] main_memory [0:`MEM_DEPTH-1];  // Byte-addressable memory
   logic [AWIDTH-1:0] address;
   assign address = addr_i - BASE_ADDR;
 
@@ -56,5 +56,40 @@ module memory #(
    * student below....
    *
    */
+
+ // ----------------------------
+// Combinational read logic
+// ----------------------------
+always_comb begin
+  if (rst) begin
+    data_o = '0;
+  end else if (read_en_i) begin
+    data_o = { main_memory[address + 3],
+               main_memory[address + 2],
+               main_memory[address + 1],
+               main_memory[address] };
+  end else begin
+    data_o = '0;
+  end
+end
+
+// ----------------------------
+// Sequential write logic
+// ----------------------------
+always_ff @(posedge clk) begin
+  if (write_en_i) begin
+    main_memory[address] <= data_i[7:0];
+    main_memory[address + 1] <= data_i[15:8];
+    main_memory[address + 2] <= data_i[23:16];
+    main_memory[address + 3] <= data_i[31:24];
+  end
+end
+
+
+
+
+
+
+
 
 endmodule : memory
