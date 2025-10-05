@@ -46,9 +46,25 @@ module decode #(
     output logic [DWIDTH-1:0] imm_o
 );	
 
+/* Pseudocode for implementation
+    input:
+        inst_i ← 32-bit instruction from fetch
+    outputs:
+        opcode_o ← inst_i[6:0]
+        rd_o     ← inst_i[11:7]
+        funct3_o ← inst_i[14:12]
+        rs1_o    ← inst_i[19:15]
+        rs2_o    ← inst_i[24:20]
+        funct7_o ← inst_i[31:25]
+*/
+
+
+
+	
     /*
      * Process definitions to be filled by
      * student below...
      */
 
 endmodule : decode
+
