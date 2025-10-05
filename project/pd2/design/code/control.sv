@@ -46,9 +46,53 @@ module control #(
     output logic [3:0] alusel_o
 );
 
+
+/* Pseudocode for implementation
+  define ALU opcodes:
+    ALU_ADD
+    ALU_SUB
+    ALU_SLL
+    ALU_SLT
+    ALU_SLTU
+    ALU_XOR
+    ALU_SRL
+    ALU_SRA
+    ALU_OR
+    ALU_AN
+    ALU_PASS
+
+  // Select behavior by opcode
+  switch (opcode_i)
+
+    case LOAD (7'b0000011):
+
+    case STORE (7'b0100011):
+
+    case BRANCH (7'b1100011):
+
+    case JAL (7'b1101111):
+
+    case JALR (7'b1100111):
+
+    case LUI (7'b0110111):
+
+    case AUIPC (7'b0010111):
+
+    case ALU_IMM (7'b0010011):
+
+    case ALU_REG (7'b0110011):
+
+    default:
+      // leave defaults (all zeros)
+
+  end switch
+  // Helper: decode_alu_op(funct3, funct7, is_imm)
+*/
+
     /*
      * Process definitions to be filled by
      * student below...
      */
 
 endmodule : control
+
