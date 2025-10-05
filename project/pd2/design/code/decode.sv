@@ -47,25 +47,7 @@ module decode #(
 );	
 
 /* Pseudocode for implementation
-module decode:
-  inputs:
-    clk, rst
-    insn_i [31:0]
-    pc_i   [AWIDTH-1:0]
-
-  outputs:
-    pc_o     <= AWIDTH bits
-    insn_o   <= 32 bits
-    opcode_o <= insn_i[6:0]
-    rd_o     <= insn_i[11:7]
-    funct3_o <= insn_i[14:12]
-    rs1_o    <= insn_i[19:15]
-    rs2_o    <= insn_i[24:20]
-    funct7_o <= insn_i[31:25]
-    shamt_o  <= insn_i[24:20]    // shift amount for shift-immediate operations
-    imm_o    <= 32-bit sign-extended immediate (see below)
-
-  combinational helper: Produce an immediate instruction based on its opcode 
+combinational helper: Produce an immediate instruction based on its opcode 
   imm_from_inst(inst):
 	return immediate instruction
 
@@ -83,5 +65,6 @@ module decode:
      */
 
 endmodule : decode
+
 
 
