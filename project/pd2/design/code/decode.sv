@@ -45,25 +45,36 @@ module decode #(
     output logic [4:0] shamt_o,
     output logic [DWIDTH-1:0] imm_o
 );	
+	assign pc_o = pc_i;
+	assign insn_o = insn_i;
+	assign opcode_o = insn_i[6:0];
+	assign rd_o = insn_i[11:7];	// is_stype || is_btype ? 0 : insn_i[11:7]; 
+	assign funct3_o = insn_i[14:12];
+	assign rs1_o = insn_i[19:15];
+	assign rs2_o = insn_i[24:20];
+	assign funct7_o = insn_i[31:25];
 
-/* Pseudocode for implementation
-combinational helper: Produce an immediate instruction based on its opcode 
-  imm_from_inst(inst):
-	return immediate instruction
+	// assign shamt_o = 
 
-  synchronous process for reset:
-    always_ff @(posedge clk or posedge rst)
-	
-*/
+	/*
+	logic isi_imm, is_stype, is_btype, is_utype, is_jtype;
+	assign is_imm = opcode_o == 7'b0010011;
+	assign is_stype = opcode_o == 7'b0100011;
+	assign is_btype = opcode_o == 7'b1100011;
+	assign is_utype = opcode_o == 7'b0
+	*/
 
-
-
-	
-    /*
-     * Process definitions to be filled by
-     * student below...
-     */
-
+	/*
+	always_comb begin
+		if (is_stype || is_btype) begin
+			rd_o = 0;
+			funct7_o = 0;
+		else
+			rd_o = insn_i[11:7];
+			funct7_o = insn_i[31:25];
+		end
+	end
+	*/
 endmodule : decode
 
 
