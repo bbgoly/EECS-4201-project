@@ -28,71 +28,130 @@
 module control #(
 	parameter int DWIDTH=32
 )(
-	// inputs
-    input logic [DWIDTH-1:0] insn_i,
-    input logic [6:0] opcode_i,
-    input logic [6:0] funct7_i,
-    input logic [2:0] funct3_i,
+		// inputs
+		input logic [DWIDTH-1:0] insn_i,
+		input logic [6:0] opcode_i,
+		input logic [6:0] funct7_i,
+		input logic [2:0] funct3_i,
 
-    // outputs
-    output logic pcsel_o,
-    output logic immsel_o,
-    output logic regwren_o,
-    output logic rs1sel_o,
-    output logic rs2sel_o,
-    output logic memren_o,
-    output logic memwren_o,
-    output logic [1:0] wbsel_o,
-    output logic [3:0] alusel_o
-);
+		// outputs
+		output logic pcsel_o,
+		output logic immsel_o,
+		output logic regwren_o,
+		output logic rs1sel_o,
+		output logic rs2sel_o,
+		output logic memren_o,
+		output logic memwren_o,
+		output logic [1:0] wbsel_o,
+		output logic [3:0] alusel_o
+	);
+
+	always_comb begin
+		// Default control signal values
+		pcsel_o = 0;
+		immsel_o = 0;
+		regwren_o = 0;
+		rs1sel_o = 0;
+		rs2sel_o = 0;
+		memren_o = 0;
+		memwren_o = 0;
+		wbsel_o = WB_ALU;
+		alusel_o = ALU_ADD;
 
 
-/* Pseudocode for implementation
-  define ALU opcodes:
-    ALU_ADD
-    ALU_SUB
-    ALU_SLL
-    ALU_SLT
-    ALU_SLTU
-    ALU_XOR
-    ALU_SRL
-    ALU_SRA
-    ALU_OR
-    ALU_AN
-    ALU_PASS
+        unique case (opcode_i)
 
-  // Select behavior by opcode
-  switch (opcode_i)
+            // =====================================================
+            // R-type instructions (ADD, SUB, AND, OR, XOR, SLL, SRL, SRA)
+            // =====================================================
+            RTYPE_OPCODE: begin
+                regwren_o = 1;
+                immsel_o  = 0;
+                rs1sel_o  = 0;
+                rs2sel_o  = 0;
+                wbsel_o   = WB_ALU; // ALU result will be written back to register file
 
-    case LOAD (7'b0000011):
+                unique case (funct3_i)
+                    3'b000: alusel_o = (funct7_i[5]) ? ALU_SUB : ALU_ADD; // SUB or ADD
+                    3'b111: alusel_o = ALU_AND;
+                    3'b110: alusel_o = ALU_OR;
+                    3'b100: alusel_o = ALU_XOR;
+                    3'b001: alusel_o = ALU_SLL;
+                    3'b101: alusel_o = (funct7_i[5]) ? ALU_SRA : ALU_SRL; // SRA or SRL
+                    default: alusel_o = ALU_ADD;
+                endcase
+            end
 
-    case STORE (7'b0100011):
+            // =====================================================
+            // I-type ALU instructions (ADDI, ANDI, ORI, etc.)
+            // =====================================================
+            ITYPE_OPCODE: begin
+                regwren_o = 1;
+                immsel_o  = 1;
+                rs2sel_o  = 1;
+                wbsel_o   = WB_ALU;
 
-    case BRANCH (7'b1100011):
+                unique case (funct3_i)
+                    3'b000: alusel_o = ALU_ADD; // ADDI
+                    3'b111: alusel_o = ALU_AND; // ANDI
+                    3'b110: alusel_o = ALU_OR; 	// ORI
+                    3'b100: alusel_o = ALU_XOR; // XORI
+                    3'b001: alusel_o = ALU_SLL; // SLLI
+                    3'b101: alusel_o = (funct7_i[5]) ? ALU_SRA : ALU_SRL; // SRAI / SRLI
+                    default: alusel_o = ALU_ADD;
+                endcase
+            end
 
-    case JAL (7'b1101111):
+            // =====================================================
+            // Load (LW)
+            // =====================================================
+            LOAD_OPCODE: begin
+                regwren_o = 1;
+                immsel_o  = 1;
+                memren_o  = 1;
+                wbsel_o   = WB_MEM;		// Select memory output for write back
+                alusel_o  = ALU_ADD; 	// ALU add base + offset
+            end
 
-    case JALR (7'b1100111):
+            // =====================================================
+            // Store (SW)
+            // =====================================================
+            STYPE_OPCODE: begin
+                regwren_o = 0;
+                immsel_o  = 1;
+                memwren_o = 1;
+                alusel_o  = ALU_ADD; // ALU add base + offset
+            end
 
-    case LUI (7'b0110111):
+            // =====================================================
+            // Branch (BEQ, BNE, etc.)
+            // =====================================================
+            BTYPE_OPCODE: begin
+                pcsel_o   = 1;       // Control chooses branch target
+                regwren_o = 0;
+                immsel_o  = 0;
+                alusel_o  = ALU_SUB; // ALU subtract for comparison
+            end
 
-    case AUIPC (7'b0010111):
+            // =====================================================
+            // JAL (Jump and Link)
+            // =====================================================
+            JTYPE_OPCODE: begin
+                pcsel_o   = 1;
+                regwren_o = 1;
+                immsel_o  = 1;
+                wbsel_o   = WB_PC; // Write back PC+4 to register file
+            end
 
-    case ALU_IMM (7'b0010011):
-
-    case ALU_REG (7'b0110011):
-
-    default:
-      // leave defaults (all zeros)
-
-  end switch
-  // Helper: decode_alu_op(funct3, funct7, is_imm)
-*/
-
-    /*
-     * Process definitions to be filled by
-     * student below...
-     */
-
+            // =====================================================
+            // LUI
+            // =====================================================
+            LUI_OPCODE: begin
+                regwren_o = 1;
+                immsel_o  = 1;
+                wbsel_o   = WB_ALU;
+                alusel_o  = ALU_PASS; // Pass immediate from ALU
+            end
+        endcase
+    end
 endmodule : control
-
