@@ -1,4 +1,6 @@
 /*
+ * Yousif Kndkji
+ * Salman Kayani
  * Module: decode
  *
  * Description: Decode stage
@@ -26,56 +28,63 @@
 module decode #(
     parameter int DWIDTH=32,
     parameter int AWIDTH=32
-)(
-	// inputs
-	input logic clk,
-	input logic rst,
-	input logic [DWIDTH - 1:0] insn_i,
-	input logic [DWIDTH - 1:0] pc_i,
+	)(
+		// inputs
+		input logic clk,
+		input logic rst,
+		input logic [DWIDTH - 1:0] insn_i,
+		input logic [DWIDTH - 1:0] pc_i,
 
-    // outputs
-    output logic [AWIDTH-1:0] pc_o,
-    output logic [DWIDTH-1:0] insn_o,
-    output logic [6:0] opcode_o,
-    output logic [4:0] rd_o,
-    output logic [4:0] rs1_o,
-    output logic [4:0] rs2_o,
-    output logic [6:0] funct7_o,
-    output logic [2:0] funct3_o,
-    output logic [4:0] shamt_o,
-    output logic [DWIDTH-1:0] imm_o
-);	
+		// outputs
+		output logic [AWIDTH-1:0] pc_o,
+		output logic [DWIDTH-1:0] insn_o,
+		output logic [6:0] opcode_o,
+		output logic [4:0] rd_o,
+		output logic [4:0] rs1_o,
+		output logic [4:0] rs2_o,
+		output logic [6:0] funct7_o,
+		output logic [2:0] funct3_o,
+		output logic [4:0] shamt_o,
+		output logic [DWIDTH-1:0] imm_o
+	);
+
 	assign pc_o = pc_i;
 	assign insn_o = insn_i;
 	assign opcode_o = insn_i[6:0];
-	assign rd_o = insn_i[11:7];	// is_stype || is_btype ? 0 : insn_i[11:7]; 
-	assign funct3_o = insn_i[14:12];
-	assign rs1_o = insn_i[19:15];
-	assign rs2_o = insn_i[24:20];
-	assign funct7_o = insn_i[31:25];
-
 	// assign shamt_o = 
+	// assign imm_o = 32'b0;
 
-	/*
 	logic isi_imm, is_stype, is_btype, is_utype, is_jtype;
-	assign is_imm = opcode_o == 7'b0010011;
-	assign is_stype = opcode_o == 7'b0100011;
-	assign is_btype = opcode_o == 7'b1100011;
-	assign is_utype = opcode_o == 7'b0
-	*/
 
-	/*
+	assign isi_imm = (opcode_o == 7'b0010011) ||
+					(opcode_o == 7'b1100111) ||
+					(opcode_o == 7'b1110011) ||
+					(opcode_o == 7'b0000011);
+	assign is_stype = (opcode_o == 7'b0100011);
+	assign is_btype = (opcode_o == 7'b1100011);
+	assign is_utype = (opcode_o == 7'b0110111) || (opcode_o == 7'b0010111);
+	assign is_jtype = (opcode_o == 7'b1101111);
+
 	always_comb begin
+		rd_o     = insn_i[11:7];
+		funct3_o = insn_i[14:12];
+		rs1_o    = insn_i[19:15];
+		rs2_o    = insn_i[24:20];
+		funct7_o = insn_i[31:25];
+		shamt_o  = insn_i[24:20];
+
+		// Clear unused instruction fields based on instruction type
 		if (is_stype || is_btype) begin
-			rd_o = 0;
-			funct7_o = 0;
-		else
-			rd_o = insn_i[11:7];
-			funct7_o = insn_i[31:25];
+			rd_o     = 5'b0;
+			funct7_o = 7'b0;
+		end else if (isi_imm) begin
+			rs2_o    = 5'b0;
+			funct7_o = 7'b0;
+		end else if (is_utype || is_jtype) begin
+			rs1_o    = 5'b0;
+			rs2_o    = 5'b0;
+			funct7_o = 7'b0;
 		end
 	end
-	*/
+
 endmodule : decode
-
-
-
