@@ -14,6 +14,13 @@ module pd2 #(
     input logic clk,
     input logic reset
 );	
+
+	// ---------------------------------------------------------
+    // Instruction Memory
+    // ---------------------------------------------------------
+    // Reads the instruction at the address provided by fetch.
+    // The instruction memory is pre-loaded with machine code.
+	
     // imemory signals
     logic [DWIDTH - 1:0] addr_i;
     logic [DWIDTH - 1:0] data_i;
@@ -41,6 +48,13 @@ module pd2 #(
     assign read_en = 1'b1;
     assign write_en = 1'b0;
 
+	// ---------------------------------------------------------
+    // Fetch Stage
+    // ---------------------------------------------------------
+    // Responsible for maintaining the program counter.
+    // On reset, PC is set to BASEADDR. On each clock edge,
+    // PC increments by 4 to fetch the next instruction.
+	
     // Fetch
     fetch #(
         .AWIDTH(32),
@@ -53,6 +67,13 @@ module pd2 #(
         .insn_o(f_insn)         
     );
 
+    // ---------------------------------------------------------
+    // Decode Stage
+    // ---------------------------------------------------------
+    // Extracts fields such as opcode, rd, rs1, rs2, funct3,
+    // and funct7 from the instruction fetched in the previous stage.
+    // Also passes along the program counter for use in later stages.
+	
      logic [AWIDTH-1:0] d_pc;
      logic [DWIDTH-1:0] d_insn;
      logic [6:0] d_opcode;
@@ -82,12 +103,27 @@ decode #(.DWIDTH(DWIDTH), .AWIDTH(AWIDTH)) decode1 (
     .imm_o (d_imm)
 );
 
+    // ---------------------------------------------------------
+    // Immediate Generator
+    // ---------------------------------------------------------
+    // Generates the 32-bit immediate value based on the type
+    // of instruction (I-type, S-type, etc.) determined from
+    // the opcode field.
+
 igen #(.DWIDTH(DWIDTH)) igen1 (
     .opcode_i (d_opcode),
     .insn_i (f_insn),
 	
     .imm_o (d_imm)
 );
+
+    // ---------------------------------------------------------
+    // Control Path
+    // ---------------------------------------------------------
+    // Produces the control signals used to steer data between
+    // the different stages of the processor. These signals
+    // control register file writes, ALU operation, and memory
+    // access based on instruction type.
 
 logic pcsel_out;
 logic immsel_out;
