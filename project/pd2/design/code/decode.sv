@@ -54,16 +54,16 @@ module decode #(
 	// assign shamt_o = 
 	// assign imm_o = 32'b0;
 
-	logic isi_imm, is_stype, is_btype, is_utype, is_jtype;
+	logic is_itype, is_stype, is_btype, is_utype, is_jtype;
 
-	assign isi_imm = (opcode_o == 7'b0010011) ||
-					(opcode_o == 7'b1100111) ||
-					(opcode_o == 7'b1110011) ||
-					(opcode_o == 7'b0000011);
-	assign is_stype = (opcode_o == 7'b0100011);
-	assign is_btype = (opcode_o == 7'b1100011);
-	assign is_utype = (opcode_o == 7'b0110111) || (opcode_o == 7'b0010111);
-	assign is_jtype = (opcode_o == 7'b1101111);
+	assign is_itype = (opcode_o == ITYPE_OPCODE) ||
+					(opcode_o == SYSTEM_OPCODE) ||
+					(opcode_o == JALR_OPCODE) ||
+					(opcode_o == LOAD_OPCODE);
+	assign is_stype = (opcode_o == STYPE_OPCODE);
+	assign is_btype = (opcode_o == BTYPE_OPCODE);
+	assign is_utype = (opcode_o == LUI_OPCODE) || (opcode_o == AUIPC_OPCODE);
+	assign is_jtype = (opcode_o == JTYPE_OPCODE);
 
 	always_comb begin
 		rd_o     = insn_i[11:7];
@@ -77,7 +77,7 @@ module decode #(
 		if (is_stype || is_btype) begin
 			rd_o     = 5'b0;
 			funct7_o = 7'b0;
-		end else if (isi_imm) begin
+		end else if (is_itype) begin
 			rs2_o    = 5'b0;
 			funct7_o = 7'b0;
 		end else if (is_utype || is_jtype) begin

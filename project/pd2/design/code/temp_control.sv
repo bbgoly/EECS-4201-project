@@ -28,93 +28,93 @@ always_comb begin
             // =====================================================
             // R-type instructions (ADD, SUB, AND, OR, XOR, SLL, SRL, SRA)
             // =====================================================
-            7'b0110011: begin
+            RTYPE_OPCODE: begin
                 regwren_o = 1;
                 immsel_o  = 0;
-                wbsel_o   = 2'b00; // ALU result
+                wbsel_o   = WB_ALU; // ALU result will be written back to register file
                 rs1sel_o  = 0;
                 rs2sel_o  = 0;
 
                 unique case (funct3_i)
-                    3'b000: alusel_o = (funct7_i[5]) ? 4'b0001 : 4'b0000; // SUB or ADD
-                    3'b111: alusel_o = 4'b0010; // AND
-                    3'b110: alusel_o = 4'b0011; // OR
-                    3'b100: alusel_o = 4'b0100; // XOR
-                    3'b001: alusel_o = 4'b0101; // SLL
-                    3'b101: alusel_o = (funct7_i[5]) ? 4'b0111 : 4'b0110; // SRA or SRL
-                    default: alusel_o = 4'b0000;
+                    3'b000: alusel_o = (funct7_i[5]) ? ALU_SUB : ALU_ADD; // SUB or ADD
+                    3'b111: alusel_o = ALU_AND;
+                    3'b110: alusel_o = ALU_OR;
+                    3'b100: alusel_o = ALU_XOR;
+                    3'b001: alusel_o = ALU_SLL;
+                    3'b101: alusel_o = (funct7_i[5]) ? ALU_SRA : ALU_SRL; // SRA or SRL
+                    default: alusel_o = ALU_ADD;
                 endcase
             end
 
             // =====================================================
             // I-type ALU instructions (ADDI, ANDI, ORI, etc.)
             // =====================================================
-            7'b0010011: begin
+            ITYPE_OPCODE: begin
                 regwren_o = 1;
                 immsel_o  = 1;
-                wbsel_o   = 2'b00;
+                wbsel_o   = WB_ALU;
                 rs2sel_o  = 1;
 
                 unique case (funct3_i)
-                    3'b000: alusel_o = 4'b0000; // ADDI
-                    3'b111: alusel_o = 4'b0010; // ANDI
-                    3'b110: alusel_o = 4'b0011; // ORI
-                    3'b100: alusel_o = 4'b0100; // XORI
-                    3'b001: alusel_o = 4'b0101; // SLLI
-                    3'b101: alusel_o = (funct7_i[5]) ? 4'b0111 : 4'b0110; // SRAI / SRLI
-                    default: alusel_o = 4'b0000;
+                    3'b000: alusel_o = ALU_ADD; // ADDI
+                    3'b111: alusel_o = ALU_AND; // ANDI
+                    3'b110: alusel_o = ALU_OR; 	// ORI
+                    3'b100: alusel_o = ALU_XOR; // XORI
+                    3'b001: alusel_o = ALU_SLL; // SLLI
+                    3'b101: alusel_o = (funct7_i[5]) ? ALU_SRA : ALU_SRL; // SRAI / SRLI
+                    default: alusel_o = ALU_ADD;
                 endcase
             end
 
             // =====================================================
             // Load (LW)
             // =====================================================
-            7'b0000011: begin
+            LOAD_OPCODE: begin
                 regwren_o = 1;
                 immsel_o  = 1;
-                wbsel_o   = 2'b01; // Memory data
+                wbsel_o   = WB_MEM; // Select memory output for write back
                 memren_o  = 1;
-                alusel_o  = 4'b0000; // ADD base + offset
+                alusel_o  = ALU_ADD; // ALU add base + offset
             end
 
             // =====================================================
             // Store (SW)
             // =====================================================
-            7'b0100011: begin
+            STYPE_OPCODE: begin
                 immsel_o  = 1;
                 memwren_o = 1;
                 regwren_o = 0;
-                alusel_o  = 4'b0000; // ADD base + offset
+                alusel_o  = ALU_ADD; // ALU add base + offset
             end
 
             // =====================================================
             // Branch (BEQ, BNE, etc.)
             // =====================================================
-            7'b1100011: begin
+            BTYPE_OPCODE: begin
                 regwren_o = 0;
                 immsel_o  = 0;
-                alusel_o  = 4'b0001; // SUB for comparison
+                alusel_o  = ALU_SUB; // ALU subtract for comparison
                 pcsel_o   = 1;       // control chooses branch target
             end
 
             // =====================================================
             // JAL (Jump and Link)
             // =====================================================
-            7'b1101111: begin
+            JTYPE_OPCODE: begin
                 pcsel_o   = 1;
                 regwren_o = 1;
-                wbsel_o   = 2'b10; // PC+4
+                wbsel_o   = WB_PC; // Write back PC+4 to register file
                 immsel_o  = 1;
             end
 
             // =====================================================
             // LUI
             // =====================================================
-            7'b0110111: begin
+            LUI_OPCODE: begin
                 regwren_o = 1;
                 immsel_o  = 1;
-                wbsel_o   = 2'b00;
-                alusel_o  = 4'b1000; // Pass immediate
+                wbsel_o   = WB_ALU;
+                alusel_o  = ALU_PASS; // Pass immediate from ALU
             end
         endcase
     end
