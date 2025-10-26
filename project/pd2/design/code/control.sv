@@ -27,24 +27,23 @@
 
 module control #(
 	parameter int DWIDTH=32
-)(
-		// inputs
-		input logic [DWIDTH-1:0] insn_i,
-		input logic [6:0] opcode_i,
-		input logic [6:0] funct7_i,
-		input logic [2:0] funct3_i,
-
-		// outputs
-		output logic pcsel_o,
-		output logic immsel_o,
-		output logic regwren_o,
-		output logic rs1sel_o,
-		output logic rs2sel_o,
-		output logic memren_o,
-		output logic memwren_o,
-		output logic [1:0] wbsel_o,
-		output logic [3:0] alusel_o
-	);
+) (
+	// inputs
+	input logic [DWIDTH-1:0] insn_i,
+	input logic [6:0] opcode_i,
+	input logic [6:0] funct7_i,
+	input logic [2:0] funct3_i,
+	// outputs
+	output logic pcsel_o,
+	output logic immsel_o,
+	output logic regwren_o,
+	output logic rs1sel_o,
+	output logic rs2sel_o,
+	output logic memren_o,
+	output logic memwren_o,
+	output logic [1:0] wbsel_o,
+	output logic [3:0] alusel_o
+);
 
 	always_comb begin
 		// Default control signal values
@@ -154,4 +153,5 @@ module control #(
             end
         endcase
     end
+	
 endmodule : control

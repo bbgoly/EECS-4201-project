@@ -51,8 +51,6 @@ module decode #(
 	assign pc_o = pc_i;
 	assign insn_o = insn_i;
 	assign opcode_o = insn_i[6:0];
-	// assign shamt_o = 
-	// assign imm_o = 32'b0;
 
 	logic is_itype, is_stype, is_btype, is_utype, is_jtype;
 

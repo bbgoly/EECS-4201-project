@@ -9,10 +9,11 @@
  */
 
 module pd2 #(
-    parameter int AWIDTH = 32,
-    parameter int DWIDTH = 32)(
-    input logic clk,
-    input logic reset
+	parameter int AWIDTH = 32,
+	parameter int DWIDTH = 32
+) (
+	input logic clk,
+	input logic reset
 );	
 
 	// ---------------------------------------------------------
@@ -74,88 +75,82 @@ module pd2 #(
     // and funct7 from the instruction fetched in the previous stage.
     // Also passes along the program counter for use in later stages.
 	
-     logic [AWIDTH-1:0] d_pc;
-     logic [DWIDTH-1:0] d_insn;
-     logic [6:0] d_opcode;
-     logic [4:0] d_rd;
-     logic [4:0] d_rs1;
-     logic [4:0] d_rs2;
-     logic [6:0] d_funct7;
-     logic [2:0] d_funct3;
-     logic [4:0] d_shamt;
-     logic [DWIDTH-1:0] d_imm;
+	logic [AWIDTH-1:0] d_pc;
+	logic [DWIDTH-1:0] d_insn;
+	logic [6:0] d_opcode;
+	logic [4:0] d_rd;
+	logic [4:0] d_rs1;
+	logic [4:0] d_rs2;
+	logic [6:0] d_funct7;
+	logic [2:0] d_funct3;
+	logic [4:0] d_shamt;
+	logic [DWIDTH-1:0] d_imm;
 
-decode #(.DWIDTH(DWIDTH), .AWIDTH(AWIDTH)) decode1 (
-    .clk (clk),
-    .rst (reset),
-    .insn_i (f_insn),
-    .pc_i (f_pc),
+	decode #(.DWIDTH(DWIDTH), .AWIDTH(AWIDTH)) decode1 (
+		.clk (clk),
+		.rst (reset),
+		.insn_i (f_insn),
+		.pc_i (f_pc),
 
-    .pc_o (d_pc),
-    .insn_o (f_insn),
-    .opcode_o (d_opcode),
-    .rd_o (d_rd),
-    .rs1_o (d_rs1),
-    .rs2_o (d_rs2),
-    .funct7_o (d_funct7),
-    .funct3_o (d_funct3),
-    .shamt_o (d_shamt),
-    .imm_o (d_imm)
-);
+		.pc_o (d_pc),
+		.insn_o (f_insn),
+		.opcode_o (d_opcode),
+		.rd_o (d_rd),
+		.rs1_o (d_rs1),
+		.rs2_o (d_rs2),
+		.funct7_o (d_funct7),
+		.funct3_o (d_funct3),
+		.shamt_o (d_shamt),
+		.imm_o (d_imm)
+	);
 
-    // ---------------------------------------------------------
-    // Immediate Generator
-    // ---------------------------------------------------------
-    // Generates the 32-bit immediate value based on the type
-    // of instruction (I-type, S-type, etc.) determined from
-    // the opcode field.
+	// ---------------------------------------------------------
+	// Immediate Generator
+	// ---------------------------------------------------------
+	// Generates the 32-bit immediate value based on the type
+	// of instruction (I-type, S-type, etc.) determined from
+	// the opcode field.
 
-igen #(.DWIDTH(DWIDTH)) igen1 (
-    .opcode_i (d_opcode),
-    .insn_i (f_insn),
-	
-    .imm_o (d_imm)
-);
+	igen #(.DWIDTH(DWIDTH)) igen1 (
+		.opcode_i (d_opcode),
+		.insn_i (f_insn),
+		
+		.imm_o (d_imm)
+	);
 
-    // ---------------------------------------------------------
-    // Control Path
-    // ---------------------------------------------------------
-    // Produces the control signals used to steer data between
-    // the different stages of the processor. These signals
-    // control register file writes, ALU operation, and memory
-    // access based on instruction type.
+	// ---------------------------------------------------------
+	// Control Path
+	// ---------------------------------------------------------
+	// Produces the control signals used to steer data between
+	// the different stages of the processor. These signals
+	// control register file writes, ALU operation, and memory
+	// access based on instruction type.
 
-logic pcsel_out;
-logic immsel_out;
-logic regwren_out;
-logic rs1sel_out;
-logic rs2sel_out;
-logic memren_out;
-logic memwren_out;
-logic [1:0] wbsel_out;
-logic [3:0] alusel_out;
+	logic pcsel_out;
+	logic immsel_out;
+	logic regwren_out;
+	logic rs1sel_out;
+	logic rs2sel_out;
+	logic memren_out;
+	logic memwren_out;
+	logic [1:0] wbsel_out;
+	logic [3:0] alusel_out;
 
-control #(.DWIDTH(DWIDTH)) control1 (
-    .insn_i (f_insn),
-    .opcode_i (d_opcode),
-    .funct7_i (d_funct7),
-    .funct3_i (d_funct3),
+	control #(.DWIDTH(DWIDTH)) control1 (
+		.insn_i (f_insn),
+		.opcode_i (d_opcode),
+		.funct7_i (d_funct7),
+		.funct3_i (d_funct3),
 
-    .pcsel_o (pcsel_out),
-    .immsel_o (immsel_out),
-    .regwren_o (regwren_out),
-    .rs1sel_o (rs1sel_out),
-    .rs2sel_o (rs2sel_out),
-    .memren_o (memren_out),
-    .memwren_o (memwren_out),
-    .wbsel_o (wbsel_out),
-    .alusel_o (alusel_out)
-);
-
- /*
-  * Instantiate other submodules and
-  * probes. To be filled by student...
-  *
-  */
+		.pcsel_o (pcsel_out),
+		.immsel_o (immsel_out),
+		.regwren_o (regwren_out),
+		.rs1sel_o (rs1sel_out),
+		.rs2sel_o (rs2sel_out),
+		.memren_o (memren_out),
+		.memwren_o (memwren_out),
+		.wbsel_o (wbsel_out),
+		.alusel_o (alusel_out)
+	);
 
 endmodule : pd2
