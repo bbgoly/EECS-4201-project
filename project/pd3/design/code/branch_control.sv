@@ -15,6 +15,8 @@
  * 2) 1-bit rs1 < rs2 signal brlt_o
  */
 
+`include "constants.svh"
+
  module branch_control #(
     parameter int DWIDTH=32
 )(
@@ -28,10 +30,17 @@
     output logic brlt_o
 );
 
-    /*
-     * Process definitions to be filled by
-     * student below...
-     */
+	always_comb begin
+		breq_o = 0;
+		brlt_o = 0;
+
+		if (opcode_i == BTYPE_OPCODE) begin
+			unique case (funct3_i)
+				BREQ_FUNCT3: breq_o = rs1_i == rs2_i;
+				BRLT_FUNCT3: brlt_o = rs1_i < rs2_i; // check if signed or unsigned later
+			endcase
+		end
+	end
 
 endmodule : branch_control
 
