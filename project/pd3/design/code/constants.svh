@@ -39,4 +39,8 @@ parameter logic [1:0] WB_ALU = 2'b00;
 parameter logic [1:0] WB_MEM = 2'b01;
 parameter logic [1:0] WB_PC = 2'b10;
 
+// Branch funct3 codes
+parameter logic [2:0] BREQ_FUNCT3 = 3'b000;
+parameter logic [2:0] BRLT_FUNCT3 = 3'b100;
+
 `endif
