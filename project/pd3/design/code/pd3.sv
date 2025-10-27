@@ -191,7 +191,7 @@ module pd3 #(
 	logic breq_o, brlt_o;
 
 	branch_control #(.DWIDTH(DWIDTH)) branch_ctrl (
-		.opcode_i (opcode_i)
+		.opcode_i (opcode_i),
 		.funct3_i (funct3_i),
 		.rs1_i (rs1_i),
 		.rs2_i (rs2_i),
