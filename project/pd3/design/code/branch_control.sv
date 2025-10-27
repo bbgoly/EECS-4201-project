@@ -17,9 +17,9 @@
 
 `include "constants.svh"
 
- module branch_control #(
+module branch_control #(
     parameter int DWIDTH=32
-)(
+) (
     // inputs
     input logic [6:0] opcode_i,
     input logic [2:0] funct3_i,
@@ -37,7 +37,7 @@
 		if (opcode_i == BTYPE_OPCODE) begin
 			unique case (funct3_i)
 				BREQ_FUNCT3: breq_o = rs1_i == rs2_i;
-				BRLT_FUNCT3: brlt_o = rs1_i < rs2_i; // check if signed or unsigned later
+				BRLT_FUNCT3: brlt_o = signed'(rs1_i) < signed'(rs2_i);
 			endcase
 		end
 	end
