@@ -156,17 +156,7 @@ module pd3 #(
 		.alusel_o (alusel_out)
 	);
 
-	branch_control #(.DWIDTH(DWIDTH)) branch_control1 (
-		.opcode_i (d_opcode),
-		.funct3_i (d_funct3),
-		.rs1_i (d_rs1),
-		.rs2_i (d_rs2),
-
-		.breq_o (),
-		.brlt_o ()
-	);
-
-	register_file #(.DWIDTH(DWIDTH)) register_file1 (
+	register_file #(.DWIDTH(DWIDTH)) e_register_file (
 		.clk(clk),
 		.rst(reset),
 		.rs1_i (d_rs1),
@@ -179,18 +169,25 @@ module pd3 #(
 		.rs2data_o ()
 	);
 
+	logic e_br_taken;
+	logic [DWIDTH-1:0] e_op2, e_alu_res;
+
 	alu #(
 		.DWIDTH(DWIDTH), 
 		.AWIDTH(AWIDTH)
-	) alu1 (
+	) e_alu (
 		.pc_i (f_pc),
 		.rs1_i (d_rs1),
-		.rs2_i (d_rs2),
+		.rs2_i (alu_op2),
+		.opcode_i (d_opcode),
 		.funct3_i (d_funct3),
 		.funct7_i (d_funct7),
+		.alusel_i (alusel_out),
 
-		.res_o (),
-		.brtaken_o ()
+		.res_o (e_alu_res),
+		.brtaken_o (e_br_taken)
 	);
+
+	assign alu_op2 = immsel_out ? d_imm : d_rs2;
 
 endmodule : pd3
