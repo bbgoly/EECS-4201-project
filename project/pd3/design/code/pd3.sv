@@ -156,20 +156,40 @@ module pd3 #(
 		.alusel_o (alusel_out)
 	);
 
+	// ---------------------------------------------------------
+	// Register File
+	// ---------------------------------------------------------
+
+	logic [DWIDTH-1:0] wb_data; // see writeback mux below, only for testing this pd
+
+	logic r_write_enable;
+	logic [4:0] r_read_rs1;
+	logic [4:0] r_read_rs2;
+	logic [DWIDTH-1:0] r_read_rs1_data;
+	logic [DWIDTH-1:0] r_read_rs2_data;
+
 	register_file #(.DWIDTH(DWIDTH)) e_register_file (
 		.clk(clk),
 		.rst(reset),
 		.rs1_i (d_rs1),
 		.rs2_i (d_rs2),
 		.rd_i (d_rd),
-		.datawb_i (),
-		.regwren_i (),
+		.datawb_i (wb_data),
+		.regwren_i (regwren_out),
 
-		.rs1data_o (),
-		.rs2data_o ()
+		.rs1data_o (r_read_rs1_data),
+		.rs2data_o (r_read_rs2_data)
 	);
 
+	assign r_read_rs1 = d_rs1;
+	assign r_read_rs2 = d_rs2;
+
+	// ---------------------------------------------------------
+	// ALU
+	// ---------------------------------------------------------
+
 	logic e_br_taken;
+	logic [AWIDTH-1:0] e_pc;
 	logic [DWIDTH-1:0] e_op2, e_alu_res;
 
 	alu #(
@@ -177,7 +197,7 @@ module pd3 #(
 		.AWIDTH(AWIDTH)
 	) e_alu (
 		.pc_i (f_pc),
-		.rs1_i (d_rs1),
+		.rs1_i (),
 		.rs2_i (e_op2),
 		.opcode_i (d_opcode),
 		.funct3_i (d_funct3),
@@ -188,19 +208,44 @@ module pd3 #(
 		.brtaken_o (e_br_taken)
 	);
 
+	assign e_op2 = immsel_out ? d_imm : r_read_rs2_data;
+
+	// ---------------------------------------------------------
+	// Branch Control Signals
+	// ---------------------------------------------------------
+
 	logic breq_o, brlt_o;
 
 	branch_control #(.DWIDTH(DWIDTH)) branch_ctrl (
 		.opcode_i (opcode_i),
 		.funct3_i (funct3_i),
-		.rs1_i (rs1_i),
-		.rs2_i (rs2_i),
+		.rs1_i (r_read_rs1_data),
+		.rs2_i (r_read_rs2_data),
 
 		.breq_o (breq_o),
 		.brlt_o (brlt_o)
 	);
 
+	assign e_pc = d_pc;
 	assign e_br_taken = breq_o | brlt_o;
-	assign e_op2 = immsel_out ? d_imm : d_rs2;
+
+	// ---------------------------------------------------------
+	// Writeback Multiplexer 
+	// (very basic implementation for the sole purpose of testing 
+	// the register file, despite this PD not implementing write-back)
+	// ---------------------------------------------------------
+
+	logic [DWIDTH-1:0] pc_plus4;
+
+	assign pc_plus4 = f_pc + 32'd4;
+
+	always_comb begin
+		unique case (wbsel_out)
+			2'b00: wb_data = alu_res;
+			2'b01: wb_data = f_insn;
+			2'b10: wb_data = e_br_taken ? alu_res : pc_plus4;
+			default: wb_data = '0;
+		endcase
+	end
 
 endmodule : pd3
