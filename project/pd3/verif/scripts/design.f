@@ -9,3 +9,4 @@ execute.sv
 register_file.sv
 pd3.sv
 tb_register_file.sv
+branch_control_tb

@@ -1,3 +1,5 @@
+// Yousif Kndkji
+
 `timescale 1ns/1ps
 
 module branch_control_tb;
@@ -71,7 +73,7 @@ initial begin
 	check_branch_control(BTYPE_OPCODE, BRLT_FUNCT3, 32'd20, 32'd10, 1'b0, 1'b0);
 
 	// Non-branch instruction (should not set any branch signals)
-	check_branch_control(BTYPE_OPCODE, 3'b000, 32'd10, 32'd10, 1'b0, 1'b0);
+	check_branch_control(7'b0110011, 3'b000, 32'd10, 32'd10, 1'b0, 1'b0);
 
 	$display("=== ALL BRANCH CONTROL UNIT TESTS PASSED ===");
 	$finish;
