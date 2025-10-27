@@ -241,9 +241,9 @@ module pd3 #(
 
 	always_comb begin
 		unique case (wbsel_out)
-			2'b00: wb_data = alu_res;
+			2'b00: wb_data = e_alu_res;
 			2'b01: wb_data = f_insn;
-			2'b10: wb_data = e_br_taken ? alu_res : pc_plus4;
+			2'b10: wb_data = e_br_taken ? e_alu_res : pc_plus4;
 			default: wb_data = '0;
 		endcase
 	end
