@@ -197,7 +197,7 @@ module pd3 #(
 		.AWIDTH(AWIDTH)
 	) e_alu (
 		.pc_i (f_pc),
-		.rs1_i (),
+		.rs1_i (r_read_rs1_data),
 		.rs2_i (e_op2),
 		.opcode_i (d_opcode),
 		.funct3_i (d_funct3),
@@ -217,8 +217,8 @@ module pd3 #(
 	logic breq_o, brlt_o;
 
 	branch_control #(.DWIDTH(DWIDTH)) branch_ctrl (
-		.opcode_i (opcode_i),
-		.funct3_i (funct3_i),
+		.opcode_i (d_opcode),
+		.funct3_i (d_funct3),
 		.rs1_i (r_read_rs1_data),
 		.rs2_i (r_read_rs2_data),
 
