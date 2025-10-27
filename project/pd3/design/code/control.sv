@@ -128,8 +128,8 @@ module control #(
             BTYPE_OPCODE: begin
                 pcsel_o   = 1;       // Control chooses branch target
                 regwren_o = 0;
-                immsel_o  = 0;
-                alusel_o  = ALU_SUB; // ALU subtract for comparison
+                immsel_o  = 1;
+                alusel_o  = ALU_ADD; // ALU add PC + offset
             end
 
             // =====================================================
