@@ -178,7 +178,7 @@ module pd3 #(
 	) e_alu (
 		.pc_i (f_pc),
 		.rs1_i (d_rs1),
-		.rs2_i (alu_op2),
+		.rs2_i (e_op2),
 		.opcode_i (d_opcode),
 		.funct3_i (d_funct3),
 		.funct7_i (d_funct7),
@@ -188,6 +188,19 @@ module pd3 #(
 		.brtaken_o (e_br_taken)
 	);
 
-	assign alu_op2 = immsel_out ? d_imm : d_rs2;
+	logic breq_o, brlt_o;
+
+	branch_control #(.DWIDTH(DWIDTH)) branch_ctrl (
+		.opcode_i (opcode_i)
+		.funct3_i (funct3_i),
+		.rs1_i (rs1_i),
+		.rs2_i (rs2_i),
+
+		.breq_o (breq_o),
+		.brlt_o (brlt_o)
+	);
+
+	assign e_br_taken = breq_o | brlt_o;
+	assign e_op2 = immsel_out ? d_imm : d_rs2;
 
 endmodule : pd3

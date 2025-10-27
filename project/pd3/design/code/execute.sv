@@ -28,20 +28,9 @@ module alu #(
 	input logic [3:0] alusel_i,
 
     output logic [DWIDTH-1:0] res_o,
-    output logic brtaken_o
+    output logic brtaken_o 	// computed in top level module using branch_control output
+							// would compute in this module, but igen replaces rs2_i with d_imm from igen
 );
-
-	logic breq_o, brlt_o;
-
-	branch_control #(.DWIDTH(DWIDTH)) branch_ctrl (
-		.opcode_i (opcode_i)
-		.funct3_i (funct3_i),
-		.rs1_i (rs1_i),
-		.rs2_i (rs2_i),
-
-		.breq_o (breq_o),
-		.brlt_o (brlt_o)
-	);
 
 	always_comb begin
 		res_o = 0;
@@ -58,7 +47,5 @@ module alu #(
 			ALU_PASS: res_o = rs2_i;
 		endcase
 	end
-
-	assign brtaken_o = breq_o | brlt_o;
 
 endmodule : alu
