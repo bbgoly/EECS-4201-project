@@ -73,11 +73,11 @@ module decode #(
 
 		// Clear unused instruction fields based on instruction type
 		if (is_stype || is_btype) begin
-			rd_o     = 5'b0;
-			funct7_o = 7'b0;
+			// rd_o     = 5'b0;
+			// funct7_o = 7'b0;
 		end else if (is_itype) begin
-			rs2_o    = 5'b0;
-			funct7_o = 7'b0;
+			// rs2_o    = 5'b0;
+			// funct7_o = 7'b0;
 		end else if (is_utype || is_jtype) begin
 			rs1_o    = 5'b0;
 			rs2_o    = 5'b0;
