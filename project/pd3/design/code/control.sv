@@ -77,6 +77,8 @@ module control #(
                     3'b100: alusel_o = ALU_XOR;
                     3'b001: alusel_o = ALU_SLL;
                     3'b101: alusel_o = (funct7_i[5]) ? ALU_SRA : ALU_SRL; // SRA or SRL
+                    3'b010: alusel_o = ALU_SLT;
+                    3'b011: alusel_o = ALU_SLTU;
                     default: alusel_o = ALU_ADD;
                 endcase
             end
@@ -97,6 +99,8 @@ module control #(
                     3'b100: alusel_o = ALU_XOR; // XORI
                     3'b001: alusel_o = ALU_SLL; // SLLI
                     3'b101: alusel_o = (funct7_i[5]) ? ALU_SRA : ALU_SRL; // SRAI / SRLI
+                    3'b010: alusel_o = ALU_SLT;
+                    3'b011: alusel_o = ALU_SLTU;
                     default: alusel_o = ALU_ADD;
                 endcase
             end

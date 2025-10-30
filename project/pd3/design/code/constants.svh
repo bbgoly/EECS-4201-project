@@ -32,7 +32,9 @@ parameter logic [3:0] ALU_XOR = 4'b0100;
 parameter logic [3:0] ALU_SLL = 4'b0101;
 parameter logic [3:0] ALU_SRL = 4'b0110;
 parameter logic [3:0] ALU_SRA = 4'b0111;
-parameter logic [3:0] ALU_PASS = 4'b1000;
+parameter logic [3:0] ALU_SLT = 4'b1000;
+parameter logic [3:0] ALU_SLTU = 4'b1001;
+parameter logic [3:0] ALU_PASS = 4'b1010;
 
 // Writeback Select
 parameter logic [1:0] WB_ALU = 2'b00;
