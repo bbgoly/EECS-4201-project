@@ -167,17 +167,19 @@ module pd3 #(
 	logic r_write_enable;
 	logic [4:0] r_read_rs1;
 	logic [4:0] r_read_rs2;
+    logic [4:0] r_write_destination;
+    logic [DWIDTH-1:0] r_write_data;
 	logic [DWIDTH-1:0] r_read_rs1_data;
 	logic [DWIDTH-1:0] r_read_rs2_data;
 
 	register_file #(.DWIDTH(DWIDTH)) e_register_file (
 		.clk(clk),
 		.rst(reset),
-		.rs1_i (d_rs1),
-		.rs2_i (d_rs2),
-		.rd_i (d_rd),
+		.rs1_i (r_read_rs1),
+		.rs2_i (r_read_rs2),
+		.rd_i (r_write_destination),
 		.datawb_i (wb_data),
-		.regwren_i (regwren_out),
+		.regwren_i (r_write_enable),
 
 		.rs1data_o (r_read_rs1_data),
 		.rs2data_o (r_read_rs2_data)
@@ -185,6 +187,9 @@ module pd3 #(
 
 	assign r_read_rs1 = d_rs1;
 	assign r_read_rs2 = d_rs2;
+    assign r_write_destination = d_rd;
+    assign r_write_enable = regwren_out;
+    assign r_write_data = 0;
 
 	// ---------------------------------------------------------
 	// ALU
