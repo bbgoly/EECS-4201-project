@@ -195,14 +195,14 @@ module pd3 #(
 
 	logic e_br_taken;
 	logic [AWIDTH-1:0] e_pc;
-	logic [DWIDTH-1:0] e_op2, e_alu_res;
+	logic [DWIDTH-1:0] e_op1, e_op2, e_alu_res;
 
 	alu #(
 		.DWIDTH(DWIDTH), 
 		.AWIDTH(AWIDTH)
 	) e_alu (
 		.pc_i (f_pc),
-		.rs1_i (r_read_rs1_data),
+		.rs1_i (e_op1),
 		.rs2_i (e_op2),
 		.opcode_i (d_opcode),
 		.funct3_i (d_funct3),
@@ -213,6 +213,7 @@ module pd3 #(
 		.brtaken_o (e_br_taken)
 	);
 
+    assign e_op1 = rs1sel_out ? f_pc : r_read_rs1_data;
 	assign e_op2 = immsel_out ? d_imm : r_read_rs2_data;
 
 	// ---------------------------------------------------------
