@@ -25,14 +25,14 @@ module pd3 #(
 	// The instruction memory is pre-loaded with machine code.
 
 	// imemory signals
-	logic [DWIDTH - 1:0] addr_i;
-	logic [DWIDTH - 1:0] data_i;
+	logic [DWIDTH-1:0] addr_i;
+	logic [DWIDTH-1:0] data_i;
 	logic write_en;
 	logic read_en;
 		
 	// Fetch signals
-	logic [DWIDTH - 1:0] f_pc;
-	logic [DWIDTH - 1:0] f_insn;
+	logic [DWIDTH-1:0] f_pc;
+	logic [DWIDTH-1:0] f_insn;
 		
 	memory #(
 		.AWIDTH(AWIDTH),
@@ -98,7 +98,7 @@ module pd3 #(
 		.pc_i (f_pc),
 
 		.pc_o (d_pc),
-		.insn_o (f_insn),
+		.insn_o (d_insn),
 		.opcode_o (d_opcode),
 		.rd_o (d_rd),
 		.rs1_o (d_rs1),
@@ -162,8 +162,6 @@ module pd3 #(
 	// Register File
 	// ---------------------------------------------------------
 
-	logic [DWIDTH-1:0] wb_data; // see writeback mux below, only for testing this pd
-
 	logic r_write_enable;
 	logic [4:0] r_read_rs1;
 	logic [4:0] r_read_rs2;
@@ -178,7 +176,7 @@ module pd3 #(
 		.rs1_i (r_read_rs1),
 		.rs2_i (r_read_rs2),
 		.rd_i (r_write_destination),
-		.datawb_i (wb_data),
+		.datawb_i (r_write_data),
 		.regwren_i (r_write_enable),
 
 		.rs1data_o (r_read_rs1_data),
@@ -242,17 +240,18 @@ module pd3 #(
 	// the register file, despite this PD not implementing write-back)
 	// ---------------------------------------------------------
 
-	logic [DWIDTH-1:0] pc_plus4;
+    // logic [DWIDTH-1:0] wb_data; // see writeback mux below, only for testing this pd
+	// logic [DWIDTH-1:0] pc_plus4;
 
-	assign pc_plus4 = f_pc + 32'd4;
+	// assign pc_plus4 = f_pc + 32'd4;
 
-	always_comb begin
-		unique case (wbsel_out)
-			2'b00: wb_data = e_alu_res;
-			2'b01: wb_data = f_insn;
-			2'b10: wb_data = e_br_taken ? e_alu_res : pc_plus4;
-			default: wb_data = '0;
-		endcase
-	end
+	// always_comb begin
+	// 	unique case (wbsel_out)
+	// 		2'b00: wb_data = e_alu_res;
+	// 		2'b01: wb_data = f_insn;
+	// 		2'b10: wb_data = e_br_taken ? e_alu_res : pc_plus4;
+	// 		default: wb_data = '0;
+	// 	endcase
+	// end
 
 endmodule : pd3
