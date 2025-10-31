@@ -44,9 +44,9 @@ module alu #(
 			ALU_AND: res_o = rs1_i & rs2_i;
 			ALU_OR: res_o = rs1_i | rs2_i;
 			ALU_XOR: res_o = rs1_i ^ rs2_i;
-			ALU_SLL: res_o = rs1_i << rs2_i;
-			ALU_SRL: res_o = rs1_i >> rs2_i;
-			ALU_SRA: res_o = rs1_i >>> rs2_i;
+			ALU_SLL: res_o = rs1_i << rs2_i[4:0];
+			ALU_SRL: res_o = rs1_i >> rs2_i[4:0];
+			ALU_SRA: res_o = rs1_i >>> rs2_i[4:0];
             ALU_SLT: res_o = signed'(rs1_i) < signed'(rs2_i);
             ALU_SLTU: res_o = rs1_i < rs2_i;
 			ALU_PASS: res_o = rs2_i;
