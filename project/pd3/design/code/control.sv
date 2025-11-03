@@ -133,6 +133,8 @@ module control #(
                 pcsel_o   = 1;       // Control chooses branch target
                 regwren_o = 0;
                 immsel_o  = 1;
+                rs1sel_o  = 1;
+                rs2sel_o  = 1;
                 alusel_o  = ALU_ADD; // ALU add PC + offset
             end
 
@@ -141,20 +143,48 @@ module control #(
             // =====================================================
             JTYPE_OPCODE: begin
                 pcsel_o   = 1;
-                regwren_o = 1;
+                regwren_o = 1;       // rd <- PC+4
                 immsel_o  = 1;
-                wbsel_o   = WB_PC; // Write back PC+4 to register file
+                rs1sel_o  = 1;
+                rs2sel_o  = 1;
+                wbsel_o   = WB_PC;   // Write back PC+4 to register file
+                alusel_o  = ALU_ADD; // Compute target address PC + immediate offset
             end
+
+            // =====================================================
+			// JALR
+			// =====================================================
+			JALR_OPCODE: begin
+				pcsel_o   = 1;
+				regwren_o = 1;       // rd <- PC+4
+				immsel_o  = 1;
+				rs2sel_o  = 1;       // Use immediate for target address calculation
+				wbsel_o   = WB_PC;   // Write back PC+4 to register file
+				alusel_o  = ALU_ADD; // Compute target address rs1 + immediate offset
+			end
 
             // =====================================================
             // LUI
             // =====================================================
             LUI_OPCODE: begin
                 regwren_o = 1;
-                immsel_o  = 1;
+                immsel_o  = 1;        // Use sign-extended 20-bit U-immediate
+                rs2sel_o  = 1;
                 wbsel_o   = WB_ALU;
                 alusel_o  = ALU_PASS; // Pass immediate from ALU
             end
+
+			// =====================================================
+			// AUIPC
+			// =====================================================
+			AUIPC_OPCODE: begin
+				regwren_o = 1;
+				immsel_o  = 1;       // Use sign-extended 20-bit U-immediate
+                rs1sel_o  = 1;       // Use PC as rs1
+                rs2sel_o  = 1;
+				wbsel_o   = WB_ALU;  // Write back PC + immediate to register file
+				alusel_o  = ALU_ADD; // PC + immediate
+			end
         endcase
     end
 	

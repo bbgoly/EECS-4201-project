@@ -39,7 +39,9 @@ module alu #(
 		res_o = 0;
 
 		unique case (alusel_i)
-			ALU_ADD: res_o = rs1_i + rs2_i;
+			ALU_ADD: res_o = (opcode_i == JALR_OPCODE) 
+				? (rs1_i + rs2_i) & 32'hFFFFFFFE
+				: rs1_i + rs2_i;
 			ALU_SUB: res_o = rs1_i - rs2_i;
 			ALU_AND: res_o = rs1_i & rs2_i;
 			ALU_OR: res_o = rs1_i | rs2_i;
