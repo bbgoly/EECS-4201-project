@@ -71,18 +71,23 @@ module decode #(
 		funct7_o = insn_i[31:25];
 		shamt_o  = insn_i[24:20];
 
+		// After running tests, we determined that there is
+		// no need to clear unused fields since control signals
+		// determine how the decoded data is to be interpreted anyways.
+		// Clearing unused fields also led to the pattern check tests failing.
+
 		// Clear unused instruction fields based on instruction type
-		if (is_stype || is_btype) begin
-			// rd_o     = 5'b0;
-			// funct7_o = 7'b0;
-		end else if (is_itype) begin
-			// rs2_o    = 5'b0;
-			// funct7_o = 7'b0;
-		end else if (is_utype || is_jtype) begin
-			rs1_o    = 5'b0;
-			rs2_o    = 5'b0;
-			funct7_o = 7'b0;
-		end
+		// if (is_stype || is_btype) begin
+		// 	// rd_o     = 5'b0;
+		// 	// funct7_o = 7'b0;
+		// end else if (is_itype) begin
+		// 	// rs2_o    = 5'b0;
+		// 	// funct7_o = 7'b0;
+		// end else if (is_utype || is_jtype) begin
+		// 	// rs1_o    = 5'b0;
+		// 	// rs2_o    = 5'b0;
+		// 	// funct7_o = 7'b0;
+		// end
 	end
 
 endmodule : decode
