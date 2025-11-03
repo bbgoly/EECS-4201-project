@@ -31,17 +31,22 @@ module branch_control #(
     output logic brlt_o
 );
 
-	always_comb begin
-		breq_o = 0;
-		brlt_o = 0;
+	// always_comb begin
+	// 	breq_o = 0;
+	// 	brlt_o = 0;
 
-		if (opcode_i == BTYPE_OPCODE) begin
-			unique case (funct3_i)
-				BREQ_FUNCT3: breq_o = rs1_i == rs2_i;
-				BRLT_FUNCT3: brlt_o = signed'(rs1_i) < signed'(rs2_i);
-			endcase
-		end
-	end
+	// 	if (opcode_i == BTYPE_OPCODE) begin
+	// 		breq_o = rs1_i == rs2_i;
+	// 		brlt_o = (funct3_i == BLTU_FUNCT3 || funct3_i == BGEU_FUNCT3)
+	// 			? rs1_i < rs2_i
+	// 			: signed'(rs1_i) < signed'(rs2_i);
+	// 	end
+	// end
+
+	assign breq_o = rs1_i == rs2_i;
+	assign brlt_o = (funct3_i == BLTU_FUNCT3 || funct3_i == BGEU_FUNCT3) 
+		? rs1_i < rs2_i 
+		: signed'(rs1_i) < signed'(rs2_i);
 
 endmodule : branch_control
 

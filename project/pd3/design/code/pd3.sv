@@ -232,8 +232,26 @@ module pd3 #(
 		.brlt_o (brlt_o)
 	);
 
+	always_comb begin : branch_taken_logic
+		e_br_taken = 0;
+		if (d_opcode == BTYPE_OPCODE) begin
+			unique case (d_funct3)
+				BEQ_FUNCT3: e_br_taken = breq_o;
+				BNE_FUNCT3: e_br_taken = ~breq_o;
+				
+				BLT_FUNCT3,
+				BLTU_FUNCT3: e_br_taken = brlt_o;
+				
+				BGE_FUNCT3,
+				BGEU_FUNCT3: e_br_taken = ~brlt_o;
+				
+				default: e_br_taken = 0;
+			endcase
+		end
+	end
+
 	assign e_pc = d_pc;
-	assign e_br_taken = breq_o | brlt_o;
+	// assign e_br_taken = breq_o | brlt_o;
 
 	// ---------------------------------------------------------
 	// Writeback Multiplexer 
