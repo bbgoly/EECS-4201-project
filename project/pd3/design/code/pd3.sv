@@ -10,6 +10,8 @@
  * 2) reset signal
  */
 
+`include "constants.svh"
+
 module pd3 #(
     parameter int AWIDTH = 32,
     parameter int DWIDTH = 32
@@ -25,14 +27,14 @@ module pd3 #(
 	// The instruction memory is pre-loaded with machine code.
 
 	// imemory signals
-	logic [DWIDTH - 1:0] addr_i;
-	logic [DWIDTH - 1:0] data_i;
+	logic [DWIDTH-1:0] addr_i;
+	logic [DWIDTH-1:0] data_i;
 	logic write_en;
 	logic read_en;
 		
 	// Fetch signals
-	logic [DWIDTH - 1:0] f_pc;
-	logic [DWIDTH - 1:0] f_insn;
+	logic [DWIDTH-1:0] f_pc;
+	logic [DWIDTH-1:0] f_insn;
 		
 	memory #(
 		.AWIDTH(AWIDTH),
@@ -98,7 +100,7 @@ module pd3 #(
 		.pc_i (f_pc),
 
 		.pc_o (d_pc),
-		.insn_o (f_insn),
+		.insn_o (d_insn),
 		.opcode_o (d_opcode),
 		.rd_o (d_rd),
 		.rs1_o (d_rs1),
@@ -162,22 +164,22 @@ module pd3 #(
 	// Register File
 	// ---------------------------------------------------------
 
-	logic [DWIDTH-1:0] wb_data; // see writeback mux below, only for testing this pd
-
 	logic r_write_enable;
 	logic [4:0] r_read_rs1;
 	logic [4:0] r_read_rs2;
+    logic [4:0] r_write_destination;
+    logic [DWIDTH-1:0] r_write_data;
 	logic [DWIDTH-1:0] r_read_rs1_data;
 	logic [DWIDTH-1:0] r_read_rs2_data;
 
 	register_file #(.DWIDTH(DWIDTH)) e_register_file (
 		.clk(clk),
 		.rst(reset),
-		.rs1_i (d_rs1),
-		.rs2_i (d_rs2),
-		.rd_i (d_rd),
-		.datawb_i (wb_data),
-		.regwren_i (regwren_out),
+		.rs1_i (r_read_rs1),
+		.rs2_i (r_read_rs2),
+		.rd_i (r_write_destination),
+		.datawb_i (r_write_data),
+		.regwren_i (r_write_enable),
 
 		.rs1data_o (r_read_rs1_data),
 		.rs2data_o (r_read_rs2_data)
@@ -185,6 +187,9 @@ module pd3 #(
 
 	assign r_read_rs1 = d_rs1;
 	assign r_read_rs2 = d_rs2;
+    assign r_write_destination = d_rd;
+    assign r_write_enable = regwren_out;
+    assign r_write_data = 0;
 
 	// ---------------------------------------------------------
 	// ALU
@@ -192,14 +197,14 @@ module pd3 #(
 
 	logic e_br_taken;
 	logic [AWIDTH-1:0] e_pc;
-	logic [DWIDTH-1:0] e_op2, e_alu_res;
+	logic [DWIDTH-1:0] e_op1, e_op2, e_alu_res;
 
 	alu #(
 		.DWIDTH(DWIDTH), 
 		.AWIDTH(AWIDTH)
 	) e_alu (
 		.pc_i (f_pc),
-		.rs1_i (r_read_rs1_data),
+		.rs1_i (e_op1),
 		.rs2_i (e_op2),
 		.opcode_i (d_opcode),
 		.funct3_i (d_funct3),
@@ -210,6 +215,7 @@ module pd3 #(
 		.brtaken_o (e_br_taken)
 	);
 
+    assign e_op1 = rs1sel_out ? f_pc : r_read_rs1_data;
 	assign e_op2 = immsel_out ? d_imm : r_read_rs2_data;
 
 	// ---------------------------------------------------------
@@ -228,8 +234,26 @@ module pd3 #(
 		.brlt_o (brlt_o)
 	);
 
+	always_comb begin : branch_taken_logic
+		e_br_taken = 0;
+		if (d_opcode == BTYPE_OPCODE) begin
+			unique case (d_funct3)
+				BEQ_FUNCT3: e_br_taken = breq_o;
+				BNE_FUNCT3: e_br_taken = ~breq_o;
+				
+				BLT_FUNCT3,
+				BLTU_FUNCT3: e_br_taken = brlt_o;
+				
+				BGE_FUNCT3,
+				BGEU_FUNCT3: e_br_taken = ~brlt_o;
+				
+				default: e_br_taken = 0;
+			endcase
+		end
+	end
+
 	assign e_pc = d_pc;
-	assign e_br_taken = breq_o | brlt_o;
+	// assign e_br_taken = breq_o | brlt_o;
 
 	// ---------------------------------------------------------
 	// Writeback Multiplexer 
@@ -237,17 +261,18 @@ module pd3 #(
 	// the register file, despite this PD not implementing write-back)
 	// ---------------------------------------------------------
 
-	logic [DWIDTH-1:0] pc_plus4;
+    // logic [DWIDTH-1:0] wb_data; // see writeback mux below, only for testing this pd
+	// logic [DWIDTH-1:0] pc_plus4;
 
-	assign pc_plus4 = f_pc + 32'd4;
+	// assign pc_plus4 = f_pc + 32'd4;
 
-	always_comb begin
-		unique case (wbsel_out)
-			2'b00: wb_data = e_alu_res;
-			2'b01: wb_data = f_insn;
-			2'b10: wb_data = e_br_taken ? e_alu_res : pc_plus4;
-			default: wb_data = '0;
-		endcase
-	end
+	// always_comb begin
+	// 	unique case (wbsel_out)
+	// 		2'b00: wb_data = e_alu_res;
+	// 		2'b01: wb_data = f_insn;
+	// 		2'b10: wb_data = e_br_taken ? e_alu_res : pc_plus4;
+	// 		default: wb_data = '0;
+	// 	endcase
+	// end
 
 endmodule : pd3
