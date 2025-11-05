@@ -2,8 +2,7 @@
  * Salman Kayani
  * Module: register_file
  *
- * Description: Branch control logic. Only sets the branch control bits based on the
- * branch instruction
+ * Description: Register file 
  *
  * Inputs:
  * 1) clk

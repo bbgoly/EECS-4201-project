@@ -5,6 +5,7 @@
  *
  * Description: Decode stage
  *
+<<<<<<< HEAD
  * Inputs:
  * 1) clk
  * 2) rst signal
@@ -21,6 +22,9 @@
  * 8) 32-bit wide immediate imm_o
  * 9) 5-bit wide shift amount shamt_o
  * 10) 7-bit width opcode_o
+=======
+ * -------- REPLACE THIS FILE WITH THE DECODE MODULE DEVELOPED IN PD2 -----------
+>>>>>>> upstream/main
  */
 
 `include "constants.svh"
