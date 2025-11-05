@@ -24,15 +24,16 @@
 `define PROBE_E_ALU_RES e_alu_res
 `define PROBE_E_BR_TAKEN e_br_taken
 
-// `define PROBE_M_PC                // ??
-// `define PROBE_M_ADDRESS           // ??
-// `define PROBE_M_SIZE_ENCODED      // ??
-// `define PROBE_M_DATA              // ??
+`define PROBE_M_PC m_pc
+`define PROBE_M_ADDRESS m_address
+`define PROBE_M_SIZE_ENCODED m_size_encoded
+`define PROBE_M_DATA m_data
 
-// `define PROBE_W_PC                // ??
-// `define PROBE_W_ENABLE            // ??
-// `define PROBE_W_DESTINATION       // ??
-// `define PROBE_W_DATA              // ??
+`define PROBE_W_PC w_pc
+`define PROBE_W_ENABLE w_enable
+`define PROBE_W_DESTINATION w_destination
+`define PROBE_W_DATA w_data
+
 // ----  Probes  ----
 
 // ----  Top module  ----
