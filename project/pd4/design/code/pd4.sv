@@ -29,6 +29,10 @@ module pd4 #(
 	// imemory signals
 	logic [DWIDTH-1:0] addr_i;
 	logic [DWIDTH-1:0] data_i;
+	logic [DWIDTH-1:0] m_pc;
+	logic [DWIDTH-1:0] m_data;
+	logic m_address;
+	logic m_size_encoded;
 	logic write_en;
 	logic read_en;
 
@@ -52,6 +56,9 @@ module pd4 #(
 
 	assign read_en = 1'b1;
 	assign write_en = 1'b0;
+
+	assign m_pc = f_pc;
+	assign m_data = f_insn;
 
 	// ---------------------------------------------------------
 	// Fetch Stage
@@ -254,6 +261,41 @@ module pd4 #(
 
 	assign e_pc = d_pc;
 
+
+
+logic [AWIDTH-1:0] pc_in;
+logic [DWIDTH-1:0] alu_res_in;
+logic [DWIDTH-1:0] memory_data_in;
+logic [1:0] wbsel_in;
+logic brtaken_in;
+logic w_destination;
+logic w_enable;
+logic [DWIDTH-1:0] writeback_data_out;
+logic [DWIDTH-1:0] w_data;
+logic [AWIDTH-1:0] next_pc_out;
+logic [AWIDTH-1:0] w_pc;
+
+writeback #(.DWIDTH(DWIDTH), .AWIDTH(AWIDTH)) writeback1 (
+      .pc_i (f_pc),
+      .alu_res_i (e_alu_res),
+      .memory_data_i (f_insn),
+      .wbsel_i (wbsel_out),
+      .brtaken_i (e_br_taken),
+
+      .writeback_data_o (writeback_data_out),
+      .next_pc_o (next_pc_out)
+ );
+
+assign w_data = writeback_data_out;
+assign w_pc = next_pc_out;
+assign w_destination = brtaken_in;
+assign w_enable = r_write_enable;
+
+logic [DWIDTH-1:0] data_out;
+
+assign data_out = w_data;
+
+
 	// program termination logic
 	reg is_program = 0;
 	always_ff @(posedge clk) begin
@@ -261,7 +303,7 @@ module pd4 #(
 		if (data_out == 32'h00000073) $finish;  // directly terminate if see ecall
 		if (data_out == 32'h00008067) is_program = 1;  // if see ret instruction, it is simple program test
 		// [TODO] Change register_file_0.registers[2] to the appropriate x2 register based on your module instantiations...
-		if (is_program && (register_file_0.registers[2] == 32'h01000000 + `MEM_DEPTH)) $finish;
+		if (is_program && (e_register_file.regfile[2] == 32'h01000000 + `MEM_DEPTH)) $finish;
 	end
 
 endmodule : pd4
