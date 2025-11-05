@@ -32,6 +32,8 @@ parameter logic [3:0] ALU_XOR = 4'b0100;
 parameter logic [3:0] ALU_SLL = 4'b0101;
 parameter logic [3:0] ALU_SRL = 4'b0110;
 parameter logic [3:0] ALU_SRA = 4'b0111;
+parameter logic [3:0] ALU_SLT = 4'b1000;
+parameter logic [3:0] ALU_SLTU = 4'b1001;
 parameter logic [3:0] ALU_PASS = 4'b1000;
 
 // Writeback Select
@@ -39,8 +41,12 @@ parameter logic [1:0] WB_ALU = 2'b00;
 parameter logic [1:0] WB_MEM = 2'b01;
 parameter logic [1:0] WB_PC = 2'b10;
 
-// Branch funct3 codes
-parameter logic [2:0] BREQ_FUNCT3 = 3'b000;
-parameter logic [2:0] BRLT_FUNCT3 = 3'b100;
+// Branch instruction funct3 codes
+parameter logic [2:0] BEQ_FUNCT3 = 3'h0;
+parameter logic [2:0] BNE_FUNCT3 = 3'h1;
+parameter logic [2:0] BLT_FUNCT3 = 3'h4;
+parameter logic [2:0] BGE_FUNCT3 = 3'h5;
+parameter logic [2:0] BLTU_FUNCT3 = 3'h6;
+parameter logic [2:0] BGEU_FUNCT3 = 3'h7;
 
 `endif

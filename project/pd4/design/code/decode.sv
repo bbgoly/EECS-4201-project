@@ -5,7 +5,6 @@
  *
  * Description: Decode stage
  *
-<<<<<<< HEAD
  * Inputs:
  * 1) clk
  * 2) rst signal
@@ -22,9 +21,6 @@
  * 8) 32-bit wide immediate imm_o
  * 9) 5-bit wide shift amount shamt_o
  * 10) 7-bit width opcode_o
-=======
- * -------- REPLACE THIS FILE WITH THE DECODE MODULE DEVELOPED IN PD2 -----------
->>>>>>> upstream/main
  */
 
 `include "constants.svh"
@@ -56,37 +52,11 @@ module decode #(
 	assign insn_o = insn_i;
 	assign opcode_o = insn_i[6:0];
 
-	logic is_itype, is_stype, is_btype, is_utype, is_jtype;
-
-	assign is_itype = (opcode_o == ITYPE_OPCODE) ||
-					(opcode_o == SYSTEM_OPCODE) ||
-					(opcode_o == JALR_OPCODE) ||
-					(opcode_o == LOAD_OPCODE);
-	assign is_stype = (opcode_o == STYPE_OPCODE);
-	assign is_btype = (opcode_o == BTYPE_OPCODE);
-	assign is_utype = (opcode_o == LUI_OPCODE) || (opcode_o == AUIPC_OPCODE);
-	assign is_jtype = (opcode_o == JTYPE_OPCODE);
-
-	always_comb begin
-		rd_o     = insn_i[11:7];
-		funct3_o = insn_i[14:12];
-		rs1_o    = insn_i[19:15];
-		rs2_o    = insn_i[24:20];
-		funct7_o = insn_i[31:25];
-		shamt_o  = insn_i[24:20];
-
-		// Clear unused instruction fields based on instruction type
-		if (is_stype || is_btype) begin
-			rd_o     = 5'b0;
-			funct7_o = 7'b0;
-		end else if (is_itype) begin
-			rs2_o    = 5'b0;
-			funct7_o = 7'b0;
-		end else if (is_utype || is_jtype) begin
-			rs1_o    = 5'b0;
-			rs2_o    = 5'b0;
-			funct7_o = 7'b0;
-		end
-	end
+	assign rd_o = insn_i[11:7];
+	assign funct3_o = insn_i[14:12];
+	assign rs1_o = insn_i[19:15];
+	assign rs2_o = insn_i[24:20];
+	assign funct7_o = insn_i[31:25];
+	assign shamt_o = insn_i[24:20];
 
 endmodule : decode
