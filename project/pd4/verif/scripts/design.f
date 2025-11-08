@@ -8,5 +8,6 @@ alu.sv
 igen.sv
 register_file.sv
 writeback.sv
+tb_writeback.sv
 execute.sv
 pd4.sv
