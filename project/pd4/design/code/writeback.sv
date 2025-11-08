@@ -1,4 +1,4 @@
-/*
+/* Salman Kayani
  * Module: writeback
  *
  * Description: Write-back control stage implementation
@@ -28,9 +28,29 @@
      output logic [AWIDTH-1:0] next_pc_o
  );
 
-    /*
-     * Process definitions to be filled by
-     * student below...
-     */
+    // ------------------------
+    // Next PC computation
+    // ------------------------
+    always_comb begin
+        if (brtaken_i) begin
+            // Use ALU result as the next PC when branch/jump is taken
+            next_pc_o = alu_res_i;
+        end else begin
+            // Otherwise, proceed to sequential instruction
+            next_pc_o = pc_i; //+ 32'd4;
+        end
+    end
+
+    // ------------------------
+    // Writeback data selection
+    // ------------------------
+    always_comb begin
+        unique case (wbsel_i)
+            2'b00: writeback_data_o = alu_res_i;      // R-type, I-type ALU operations
+            2'b01: writeback_data_o = memory_data_i;  // Load instructions
+            2'b10: writeback_data_o = pc_i; //+ 32'd4;   // JAL / JALR link return value
+            default: writeback_data_o = alu_res_i;    // ALU result as default
+        endcase
+    end
 
 endmodule : writeback
