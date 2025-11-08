@@ -32,7 +32,7 @@ module tb_writeback;
       .next_pc_o(next_pc_o)
   );
 
-  // Task to check expected vs. actual outputs
+  // Task to check expected vs. actual writeback outputs
   task check_output(
       input [AWIDTH-1:0] pc_in,
       input [DWIDTH-1:0] alu_in,
