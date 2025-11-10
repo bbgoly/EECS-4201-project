@@ -38,8 +38,13 @@ module tb_memory;
 		.size_encoded_i(size_encoded_i),
 		.read_en_i(read_en_i),
 		.write_en_i(write_en_i),
+
 		.data_o(data_o)
 	);
+
+	// Clock generation
+	initial clk = 0;
+	always #5 clk = ~clk; // 10ns clock period
 
 	// Reset UUT
 	task reset_uut;
@@ -96,24 +101,21 @@ module tb_memory;
 		input string desc
 	);
 		if (value !== expected)
-			$display("TEST FAILED: %s | Expected: %h, Got: %h", desc, expected, value);
+			$display("TEST FAILED: %s at time %0t\nExpected: %h\nGot: %h", desc, $time, expected, value);
 		else
-			$display("TEST PASSED: %s | Data: %h | Decimal: %d", desc, value, value);
+			$display("TEST PASSED: %s at time %0t\nData: %h\nDecimal: %d", desc, $time, value, value);
 	endtask : check_output
-
-	// Clock generation
-	initial clk = 0;
-	always #5 clk = ~clk; // 10ns clock period
 
 	initial begin
 		$display("=== Memory Test ===");
+		$display("Memory dumped from %s", `MEM_PATH);
 
-		$dumpfile("tb_memory.vcd"); // see if needed despite initial block of memory.sv
+		$dumpfile("tb_memory.vcd");
 		$dumpvars(0, tb_memory);
-		$display("Memory sucessfully dumped from %s", `MEM_PATH);
+		$display("VCD dumped");
 
 		reset_uut();
-		$display("Module reset");
+		$display("UUT module reset");
 
 		$display("Begin memory tests...");
 
