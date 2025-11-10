@@ -75,7 +75,6 @@ module tb_memory;
 		write_en_i = 0;
 		data_i = 'x;
 		size_encoded_i = 'x;
-		#1;
 	endtask : write_memory
 
 	// Read task
@@ -88,11 +87,10 @@ module tb_memory;
 		size_encoded_i = size_encoded;
 		write_en_i = 0;
 		read_en_i = 1;
-		#1;
+		@(posedge clk);
 		read_en_i = 0;
 		size_encoded_i = 'x;
 		addr_i = 'x;
-		#1;
 	endtask : read_memory
 
 	task check_output(
@@ -131,12 +129,12 @@ module tb_memory;
 		// Test 3: Write half-word, then read it
 		write_memory(BASE_ADDR + 4, 32'h0000BEEF, MEM_HALF);
 		read_memory(BASE_ADDR + 4, MEM_HALF);
-		check_output(data_o, 32'h0000BEEF, "store BEEF at base address + 4 (sh), then read it (lh)");
+		check_output(data_o, 32'hFFFFBEEF, "store BEEF at base address + 4 (sh), then read it (lh)");
 
 		// Test 4: Write byte, then read it
 		write_memory(BASE_ADDR + 8, 32'h000000EF, MEM_BYTE);
 		read_memory(BASE_ADDR + 8, MEM_BYTE);
-		check_output(data_o, 32'h000000EF, "store EF at base address + 8 (sb), then read it (lb)");
+		check_output(data_o, 32'hFFFFFFEF, "store EF at base address + 8 (sb), then read it (lb)");
 
 		// Test 5: Write half-byte, then read it unsigned
 		write_memory(BASE_ADDR + 12, 32'h0000BEEF, MEM_HALF);
@@ -151,7 +149,7 @@ module tb_memory;
 		// Test 6: Write -80, then read it
 		write_memory(BASE_ADDR + 20, 32'hFFFFFFB0, MEM_BYTE);
 		read_memory(BASE_ADDR + 20, MEM_BYTE);
-		check_output(data_o, 32'hFFFFFF80, "store -80 at base address + 20 (sb), then read it (lb)");
+		check_output(data_o, 32'hFFFFFFB0, "store -80 at base address + 20 (sb), then read it (lb)");
 
 		$display("=== Memory Tests Complete ===");
 		$finish;
