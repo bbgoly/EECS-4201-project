@@ -110,6 +110,7 @@ module tb_fetch;
 		reset_uut_and_test_pc();
 		
 		// Test 2: PC should increment by 4 when pcsel_i is 0
+		// Test 2 should also be deemed passed if PC is BASEADDR + 8, due to the two clock cycles wait in the task
 		test_pc_update(0, 'x, 'x, BASEADDR + 4, "PC increment by 4");
 
 		// Test 3: PC should jump to branch_target_i when pcsel_i is 1 and branch taken
@@ -120,6 +121,7 @@ module tb_fetch;
 		test_pc_update(1, 0, 32'hDEADBEEF, 32'h01000024, "Branch not taken, PC increment by 4 from previous address");
 
 		// Test 5: PC should continue to increment by 4 when pcsel_i is 0
+		// Test 5 should also be deemed passed if PC is 0x01000024 + 8, due to the two clock cycles wait in the task
 		test_pc_update(0, 'x, 'x, 32'h01000028, "PC increment by 4 from last address");
 
 		// Test 6: PC should jump to branch_target_i when pcsel_i is 1 and branch taken again

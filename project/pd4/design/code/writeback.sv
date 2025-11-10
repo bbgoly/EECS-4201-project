@@ -40,9 +40,7 @@
             next_pc_o = alu_res_i;
         end else begin
             // Otherwise, proceed to immediate next instruction
-			// pc incremented in fetch stage, but kept here as reminder to test
-			// if pc updates correctly when a branch is taken followed by a non-taken branch
-            next_pc_o = pc_i; //+ 32'd4;
+            next_pc_o = pc_i + 32'd4;
         end
     end
 
