@@ -259,8 +259,8 @@ module pd4 #(
 	// Memory Stage
 	// ---------------------------------------------------------
 
-	logic m_address;
-	logic m_size_encoded;
+	logic [2:0] m_size_encoded;
+	logic [AWIDTH-1:0] m_address;
 	logic [DWIDTH-1:0] m_data_o, m_data_i;
 
 	memory #(
@@ -279,8 +279,8 @@ module pd4 #(
 		.data_o(m_data_o)
 	);
 
-	assign m_address = e_alu_res;
 	assign m_size_encoded = d_funct3;
+	assign m_address = e_alu_res;
 	assign m_data_i = r_read_rs2_data;
 
 	// ---------------------------------------------------------

@@ -16,6 +16,8 @@
  * 1) DWIDTH data output data_o
  */
 
+`include "constants.svh"
+
 module memory #(
 	// parameters
 	parameter int AWIDTH = 32,
@@ -55,6 +57,7 @@ module memory #(
 		$display("IMEMORY: Loaded %0d 32-bit words from %s", `LINE_COUNT, `MEM_PATH);
 	end
 
+	// Combinational read logic
 	always_comb begin
 		data_o = '0; // default to zero
 		if (read_en_i) begin
@@ -62,12 +65,31 @@ module memory #(
 				data_o = '0;
 			end else if ((addr_i >= BASE_ADDR) && (addr_i + 32'd3 < BASE_ADDR + MEM_BYTES)) begin
 				// Word-aligned fetch: little-endian assembly
-				data_o = {
+				unique case (size_encoded_i)
+					// sign-extended read
+					MEM_BYTE: data_o = {{24{main_memory[address][7]}}, main_memory[address]}; // LB
+					MEM_HALF: data_o = {{16{main_memory[address + 1][7]}}, main_memory[address + 1], main_memory[address]}; // LH
+					
+					MEM_WORD: // LW
+						data_o = {
 							main_memory[address + 3],
 							main_memory[address + 2],
 							main_memory[address + 1],
 							main_memory[address]
-				};
+						};
+
+					// zero-extended read
+					MEM_LBU: data_o = {24'd0, main_memory[address]}; // LBU
+					MEM_LHU: data_o = {16'd0, main_memory[address + 1], main_memory[address]}; // LHU
+
+					default: // fetch word-aligned instruction
+						data_o = {
+							main_memory[address + 3],
+							main_memory[address + 2],
+							main_memory[address + 1],
+							main_memory[address]
+						};
+				endcase
 			end else begin
 				data_o = 32'hDEAD_BEEF;
 				$display("IMEMORY: OOB read @0x%08h (mapped 0x%08h)", addr_i, address);
@@ -75,13 +97,26 @@ module memory #(
 		end
 	end
 
+	// Sequential write logic
 	always_ff @(posedge clk) begin
 		if (write_en_i) begin
 			if ((addr_i >= BASE_ADDR) && (addr_i + 32'd3 < BASE_ADDR + MEM_BYTES)) begin
-				main_memory[address] <= data_i[7:0];
-				main_memory[address + 1] <= data_i[15:8];
-				main_memory[address + 2] <= data_i[23:16];
-				main_memory[address + 3] <= data_i[31:24];
+				// Word-aligned store: little-endian assembly
+				unique case (size_encoded_i & 3'b011) // mask off upper bit used for unsigned load funct3
+					MEM_BYTE: main_memory[address] <= data_i[7:0]; // SB
+					
+					MEM_HALF: begin // SH
+						main_memory[address] <= data_i[7:0];
+						main_memory[address + 1] <= data_i[15:8];
+					end
+
+					MEM_WORD: begin // SW
+						main_memory[address] <= data_i[7:0];
+						main_memory[address + 1] <= data_i[15:8];
+						main_memory[address + 2] <= data_i[23:16];
+						main_memory[address + 3] <= data_i[31:24];
+					end
+				endcase
 				$display("IMEMORY: Wrote 0x%08h to 0x%08h", data_i, addr_i);
 			end else begin
 				$display("IMEMORY: OOB write @0x%08h", addr_i);

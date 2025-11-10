@@ -49,4 +49,11 @@ parameter logic [2:0] BGE_FUNCT3 = 3'h5;
 parameter logic [2:0] BLTU_FUNCT3 = 3'h6;
 parameter logic [2:0] BGEU_FUNCT3 = 3'h7;
 
+// Memory size funct3 codes (load/store share same funct3 for byte/half/word)
+parameter logic [2:0] MEM_BYTE = 3'h0;	// LB / SB
+parameter logic [2:0] MEM_HALF = 3'h1;	// LH / SH
+parameter logic [2:0] MEM_WORD = 3'h2;	// LW / SW
+parameter logic [2:0] MEM_LBU = 3'h4;	// LBU
+parameter logic [2:0] MEM_LHU = 3'h5;	// LHU
+
 `endif
