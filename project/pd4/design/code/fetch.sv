@@ -20,9 +20,12 @@ module fetch #(
 	// inputs
 	input logic clk,
 	input logic rst,
+	input logic pcsel_i,
+	input logic [AWIDTH-1:0] target_pc_i,
+	
 	// outputs	
-	output logic [AWIDTH - 1:0] pc_o,
-	output logic [DWIDTH - 1:0] insn_o
+	output logic [AWIDTH-1:0] pc_o,
+	output logic [DWIDTH-1:0] insn_o
 );
 
     logic [AWIDTH - 1:0] pc;
@@ -30,7 +33,9 @@ module fetch #(
     always_ff @(posedge clk) begin 
         if (rst) begin
             pc <= BASEADDR;
-        end else begin
+        end else if (pcsel_i) begin
+			pc <= target_pc_i;
+		end else begin
             pc <= pc + 32'd4;
         end
     end

@@ -27,8 +27,10 @@ module pd4 #(
 	// On reset, PC is set to BASEADDR. On each clock edge,
 	// PC increments by 4 to fetch the next instruction.
 
+	logic f_pcsel_i;
 	logic [DWIDTH-1:0] f_pc;
 	logic [DWIDTH-1:0] f_insn;
+	logic [AWIDTH-1:0] f_target_pc;
 
 	fetch #(
 		.AWIDTH(AWIDTH),
@@ -37,6 +39,9 @@ module pd4 #(
 	) fetch1 (
 		.clk(clk),
 		.rst(reset),
+		.pcsel_i(f_pcsel_i),
+		.target_pc_i(f_target_pc),
+		
 		.pc_o(f_pc),            
 		.insn_o()         
 	);
@@ -61,6 +66,7 @@ module pd4 #(
 		.size_encoded_i(),
 		.read_en_i(1'b1),
 		.write_en_i(1'b0),
+
 		.data_o(f_insn)
 	);
 
@@ -154,6 +160,8 @@ module pd4 #(
 		.alusel_o (alusel_out)
 	);
 
+	assign f_pcsel_i = pcsel_out;
+
 	// ---------------------------------------------------------
 	// Register File
 	// ---------------------------------------------------------
@@ -183,7 +191,6 @@ module pd4 #(
 	assign r_read_rs2 = d_rs2;
     assign r_write_destination = d_rd;
     assign r_write_enable = regwren_out;
-    assign r_write_data = 0;
 
 	// ---------------------------------------------------------
 	// ALU
@@ -206,7 +213,7 @@ module pd4 #(
 		.alusel_i (alusel_out),
 
 		.res_o (e_alu_res),
-		.brtaken_o (e_br_taken)
+		.brtaken_o () // produced by branch_taken_logic
 	);
 
     assign e_op1 = rs1sel_out ? f_pc : r_read_rs1_data;
@@ -272,9 +279,9 @@ module pd4 #(
 		.data_o(m_data_o)
 	);
 
-	assign m_data_i = r_read_rs2_data;
-	assign m_size_encoded = d_funct3;
 	assign m_address = e_alu_res;
+	assign m_size_encoded = d_funct3;
+	assign m_data_i = r_read_rs2_data;
 
 	// ---------------------------------------------------------
 	// Write-back Stage
@@ -301,6 +308,9 @@ module pd4 #(
 
 	assign w_destination = r_write_destination;
 	assign w_enable = r_write_enable;
+
+	assign r_write_data = w_data;
+	assign f_target_pc = w_pc;
 
 	// program termination logic
 	reg is_program = 0;
