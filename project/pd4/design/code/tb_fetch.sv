@@ -60,14 +60,22 @@ module tb_fetch;
 	initial clk = 0;
 	always #5 clk = ~clk; // 10ns clock period
 
-	task reset_uut;
+	task reset_uut_and_test_pc;
 		rst = 1;
 		pcsel_i = 0;
 
 		brtaken_i = 'x;
 		branch_target_i = 'x;
-		repeat (2) @(posedge clk); // hold reset for 2 cycles
+		@(posedge clk);
+		
 		rst = 0;
+		@(posedge clk);
+		
+		if (pc_o !== BASEADDR) begin
+			$display("TEST FAILED: %s at time %0t\nExpected: %h\nGot: %h", "PC after reset", $time, BASEADDR, pc_o);
+		end else begin
+			$display("TEST PASSED: %s at time %0t\nExpected: %h\nPC: %h", "PC after reset", $time, BASEADDR, pc_o);
+		end
 	endtask
 
 	task test_pc_update(
@@ -98,11 +106,8 @@ module tb_fetch;
 		$dumpvars(0, tb_fetch);
 		$display("VCD dumped");
 
-		reset_uut();
-		$display("UUT module reset");
-
 		// Test 1: PC should be at BASEADDR after reset
-		test_pc_update(0, 'x, 'x, BASEADDR, "PC after reset");
+		reset_uut_and_test_pc();
 		
 		// Test 2: PC should increment by 4 when pcsel_i is 0
 		test_pc_update(0, 'x, 'x, BASEADDR + 4, "PC increment by 4");
