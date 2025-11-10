@@ -99,10 +99,10 @@ module tb_fetch;
 		$display("UUT module reset");
 
 		// Test 1: PC should be at BASEADDR after reset
-		test_pc_update(0, 'x, 'x, BASE_ADDR, "PC after reset");
+		test_pc_update(0, 'x, 'x, BASEADDR, "PC after reset");
 		
 		// Test 2: PC should increment by 4 when pcsel_i is 0
-		test_pc_update(0, 'x, 'x, BASE_ADDR + 4, "PC increment by 4");
+		test_pc_update(0, 'x, 'x, BASEADDR + 4, "PC increment by 4");
 
 		// Test 3: PC should jump to target_pc_i when pcsel_i is 1 and branch taken
 		test_pc_update(1, 1, 32'h01000020, 32'h01000020, "Branch taken, PC jump to target address");

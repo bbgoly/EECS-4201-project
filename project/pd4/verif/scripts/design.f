@@ -9,5 +9,6 @@ register_file.sv
 writeback.sv
 tb_writeback.sv
 tb_memory.sv
+tb_fetch.sv
 execute.sv
 pd4.sv
