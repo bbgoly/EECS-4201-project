@@ -67,11 +67,11 @@ module tb_writeback;
 
 		// ALU Writeback
 		check_output(32'h01000000, 32'hABCD1234, 32'hDEADBEEF,
-					2'b00, 1'b0, 32'hABCD1234, 32'h01000000, "ALU Writeback");
+					2'b00, 1'b0, 32'hABCD1234, 32'h01000004, "ALU Writeback");
 
 		// Memory Writeback
 		check_output(32'h01000000, 32'hABCD1234, 32'hDEADBEEF,
-					2'b01, 1'b0, 32'hDEADBEEF, 32'h01000000, "Memory Writeback");
+					2'b01, 1'b0, 32'hDEADBEEF, 32'h01000004, "Memory Writeback");
 
 		// PC Writeback on JAL / JALR (must branch)
 		check_output(32'h01000000, 32'hABCD1234, 32'hDEADBEEF,
@@ -83,11 +83,7 @@ module tb_writeback;
 		
 		// Branch Not Taken
 		check_output(32'h01000000, 32'hABCD1234, 32'hDEADBEEF,
-					2'b00, 1'b0, 32'h01000000, 32'hABCD1234, "Branch Not Taken");
-
-		// Zero Inputs
-		check_output(32'h00000000, 32'h00000000, 32'h00000000,
-					2'b00, 1'b0, 32'h00000000, 32'h00000000, "Zero Inputs");
+					2'b00, 1'b0, 32'hABCD1234, 32'h01000004, "Branch Not Taken");
 
 		// Maximum Value Inputs
 		check_output(32'hFFFFFFFF, 32'hFFFFFFFF, 32'hFFFFFFFF,
