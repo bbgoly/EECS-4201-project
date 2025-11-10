@@ -70,7 +70,7 @@ module memory #(
 					MEM_BYTE: data_o = {{24{main_memory[address][7]}}, main_memory[address]}; // LB
 					MEM_HALF: data_o = {{16{main_memory[address + 1][7]}}, main_memory[address + 1], main_memory[address]}; // LH
 					
-					MEM_WORD: // LW
+					MEM_WORD: // Execute LW or fetch word-aligned instruction
 						data_o = {
 							main_memory[address + 3],
 							main_memory[address + 2],
@@ -82,7 +82,7 @@ module memory #(
 					MEM_LBU: data_o = {24'd0, main_memory[address]}; // LBU
 					MEM_LHU: data_o = {16'd0, main_memory[address + 1], main_memory[address]}; // LHU
 
-					default: // fetch word-aligned instruction
+					default:
 						data_o = {
 							main_memory[address + 3],
 							main_memory[address + 2],

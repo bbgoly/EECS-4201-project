@@ -120,7 +120,7 @@ module tb_memory;
 		$display("Begin memory tests...");
 
 		// Test 1: Read first instruction (from test1.x)
-		read_memory(BASE_ADDR, 'x);
+		read_memory(BASE_ADDR, MEM_WORD);
 		check_output(data_o, 32'hfd010113, "read first instruction at base address");
 
 		// Test 2: Write word, then read it

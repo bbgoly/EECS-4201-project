@@ -63,7 +63,7 @@ module pd4 #(
 		.rst(reset),
 		.addr_i(m_pc),
 		.data_i(),
-		.size_encoded_i(), // dont connect to have case statement fall to default
+		.size_encoded_i(MEM_WORD),
 		.read_en_i(1'b1),
 		.write_en_i(1'b0),
 
@@ -88,7 +88,6 @@ module pd4 #(
 	logic [6:0] d_funct7;
 	logic [2:0] d_funct3;
 	logic [4:0] d_shamt;
-	logic [DWIDTH-1:0] d_imm;
 
 	decode #(
 		.DWIDTH(DWIDTH),
@@ -108,7 +107,7 @@ module pd4 #(
 		.funct7_o (d_funct7),
 		.funct3_o (d_funct3),
 		.shamt_o (d_shamt),
-		.imm_o (d_imm)
+		.imm_o ()
 	);
 
 	// ---------------------------------------------------------
@@ -117,6 +116,8 @@ module pd4 #(
 	// Generates the 32-bit immediate value based on the type
 	// of instruction (I-type, S-type, etc.) determined from
 	// the opcode field.
+	
+	logic [DWIDTH-1:0] d_imm;
 
 	igen #(.DWIDTH(DWIDTH)) igen1 (
 		.opcode_i (d_opcode),
@@ -287,8 +288,8 @@ module pd4 #(
 	// Write-back Stage
 	// ---------------------------------------------------------
 
-	logic w_destination;
 	logic w_enable;
+	logic [4:0] w_destination;
 	logic [DWIDTH-1:0] w_data; 	// shouldnt this go back to the rf lol
 	logic [AWIDTH-1:0] w_pc;	// need to modify fetch for this one
 

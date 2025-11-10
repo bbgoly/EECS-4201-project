@@ -40,7 +40,7 @@
             next_pc_o = alu_res_i;
         end else begin
             // Otherwise, proceed to immediate next instruction
-            next_pc_o = pc_i + 32'd4;
+            next_pc_o = pc_i;// + 32'd4;
         end
     end
 
