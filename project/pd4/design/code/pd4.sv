@@ -237,7 +237,7 @@ module pd4 #(
 	);
 
 	always_comb begin : branch_taken_logic
-		e_br_taken = 0;
+		e_br_taken = d_opcode == JAL_OPCODE || d_opcode == JALR_OPCODE; // JAL and JALR always branch
 		if (d_opcode == BTYPE_OPCODE) begin
 			unique case (d_funct3)
 				BEQ_FUNCT3: e_br_taken = breq_o;
