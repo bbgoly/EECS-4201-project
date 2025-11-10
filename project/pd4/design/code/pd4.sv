@@ -63,7 +63,7 @@ module pd4 #(
 		.rst(reset),
 		.addr_i(m_pc),
 		.data_i(),
-		.size_encoded_i(),
+		.size_encoded_i(), // dont connect to have case statement fall to default
 		.read_en_i(1'b1),
 		.write_en_i(1'b0),
 

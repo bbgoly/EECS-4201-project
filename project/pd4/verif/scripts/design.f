@@ -8,5 +8,6 @@ igen.sv
 register_file.sv
 writeback.sv
 tb_writeback.sv
+tb_memory.sv
 execute.sv
 pd4.sv
