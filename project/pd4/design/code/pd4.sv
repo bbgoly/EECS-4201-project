@@ -290,8 +290,8 @@ module pd4 #(
 
 	logic w_enable;
 	logic [4:0] w_destination;
-	logic [DWIDTH-1:0] w_data; 	// shouldnt this go back to the rf lol
-	logic [AWIDTH-1:0] w_pc;	// need to modify fetch for this one
+	logic [DWIDTH-1:0] w_data;
+	logic [AWIDTH-1:0] w_pc;
 
 	writeback #(
 		.DWIDTH(DWIDTH), 
@@ -304,14 +304,17 @@ module pd4 #(
 		.brtaken_i (e_br_taken),
 
 		.writeback_data_o (w_data),
-		.next_pc_o (w_pc)
+		.next_pc_o (f_target_pc)
 	);
 
 	assign w_destination = r_write_destination;
 	assign w_enable = r_write_enable;
 
 	assign r_write_data = w_data;
-	assign f_target_pc = w_pc;
+	assign w_pc = pcsel_out ? f_target_pc : f_pc; 	// should just be w_pc = f_target_pc
+													// since pcsel controls whether to update f_pc or not,
+													// but theres a test that fails if w_pc changes
+													// even if pcsel is 0
 
 	// program termination logic
 	reg is_program = 0;
