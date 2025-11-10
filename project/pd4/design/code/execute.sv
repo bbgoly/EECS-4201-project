@@ -1,6 +1,6 @@
 /*
  * Yousif Kndkji
- * Module: alu
+ * Module: execute
  *
  * Description: ALU implementation for execute stage.
  *
@@ -31,9 +31,12 @@ module alu #(
 	input logic [3:0] alusel_i,
 
     output logic [DWIDTH-1:0] res_o,
-    output logic brtaken_o 	// computed in top level module using branch_control output
-							// would compute in this module, but igen replaces rs2_i with d_imm from igen
+    output logic brtaken_o
 );
+
+	// brtaken_o is computed in top level module using branch_control output instead
+	// would compute in this module, but rs1_i and rs2_i are often replaced 
+	// by pc and/or an immediate based on control signals
 
 	always_comb begin
 		res_o = 0;

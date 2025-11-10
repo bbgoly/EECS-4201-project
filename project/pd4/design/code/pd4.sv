@@ -19,47 +19,7 @@ module pd4 #(
     input logic clk,
     input logic reset
 );
-
-	// ---------------------------------------------------------
-	// Instruction Memory
-	// ---------------------------------------------------------
-	// Reads the instruction at the address provided by fetch.
-	// The instruction memory is pre-loaded with machine code.
-
-	// imemory signals
-	logic [DWIDTH-1:0] addr_i;
-	logic [DWIDTH-1:0] data_i;
-	logic [DWIDTH-1:0] m_pc;
-	logic [DWIDTH-1:0] m_data;
-	logic m_address;
-	logic m_size_encoded;
-	logic write_en;
-	logic read_en;
-
-	// Fetch signals
-	logic [DWIDTH-1:0] f_pc;
-	logic [DWIDTH-1:0] f_insn;
-
-	memory #(
-		.AWIDTH(AWIDTH),
-		.DWIDTH(DWIDTH),
-		.BASE_ADDR(32'h01000000)
-	) imemory (
-		.clk(clk),
-		.rst(reset),
-		.addr_i(f_pc),
-		.data_i(data_i),
-		.read_en_i(read_en),
-		.write_en_i(write_en),
-		.data_o(f_insn)
-	);
-
-	assign read_en = 1'b1;
-	assign write_en = 1'b0;
-
-	assign m_pc = f_pc;
-	assign m_data = f_insn;
-
+	
 	// ---------------------------------------------------------
 	// Fetch Stage
 	// ---------------------------------------------------------
@@ -67,7 +27,9 @@ module pd4 #(
 	// On reset, PC is set to BASEADDR. On each clock edge,
 	// PC increments by 4 to fetch the next instruction.
 
-	// Fetch
+	logic [DWIDTH-1:0] f_pc;
+	logic [DWIDTH-1:0] f_insn;
+
 	fetch #(
 		.AWIDTH(AWIDTH),
 		.DWIDTH(DWIDTH),
@@ -76,8 +38,33 @@ module pd4 #(
 		.clk(clk),
 		.rst(reset),
 		.pc_o(f_pc),            
-		.insn_o(f_insn)         
+		.insn_o()         
 	);
+
+	// ---------------------------------------------------------
+	// Instruction Memory
+	// ---------------------------------------------------------
+	// Reads the instruction at the address provided by fetch.
+	// The instruction memory is pre-loaded with machine code.
+
+	logic [DWIDTH-1:0] m_pc;
+
+	memory #(
+		.AWIDTH(AWIDTH),
+		.DWIDTH(DWIDTH),
+		.BASE_ADDR(32'h01000000)
+	) imemory (
+		.clk(clk),
+		.rst(reset),
+		.addr_i(m_pc),
+		.data_i(),
+		.size_encoded_i(),
+		.read_en_i(1'b1),
+		.write_en_i(1'b0),
+		.data_o(f_insn)
+	);
+
+	assign m_pc = f_pc;
 
 	// ---------------------------------------------------------
 	// Decode Stage
@@ -261,48 +248,65 @@ module pd4 #(
 
 	assign e_pc = d_pc;
 
+	// ---------------------------------------------------------
+	// Memory Stage
+	// ---------------------------------------------------------
 
+	logic m_address;
+	logic m_size_encoded;
+	logic [DWIDTH-1:0] m_data_o, m_data_i;
 
-logic [AWIDTH-1:0] pc_in;
-logic [DWIDTH-1:0] alu_res_in;
-logic [DWIDTH-1:0] memory_data_in;
-logic [1:0] wbsel_in;
-logic brtaken_in;
-logic w_destination;
-logic w_enable;
-logic [DWIDTH-1:0] writeback_data_out;
-logic [DWIDTH-1:0] w_data;
-logic [AWIDTH-1:0] next_pc_out;
-logic [AWIDTH-1:0] w_pc;
+	memory #(
+		.AWIDTH(AWIDTH),
+		.DWIDTH(DWIDTH),
+		.BASE_ADDR(32'h01000000)
+	) dmemory (
+		.clk(clk),
+		.rst(reset),
+		.addr_i(m_address),
+		.data_i(m_data_i),
+		.size_encoded_i(m_size_encoded),
+		.read_en_i(memren_out),
+		.write_en_i(memwren_out),
 
-writeback #(.DWIDTH(DWIDTH), .AWIDTH(AWIDTH)) writeback1 (
-      .pc_i (f_pc),
-      .alu_res_i (e_alu_res),
-      .memory_data_i (f_insn),
-      .wbsel_i (wbsel_out),
-      .brtaken_i (e_br_taken),
+		.data_o(m_data_o)
+	);
 
-      .writeback_data_o (writeback_data_out),
-      .next_pc_o (next_pc_out)
- );
+	assign m_data_i = r_read_rs2_data;
+	assign m_size_encoded = d_funct3;
+	assign m_address = e_alu_res;
 
-assign w_data = writeback_data_out;
-assign w_pc = next_pc_out;
-assign w_destination = brtaken_in;
-assign w_enable = r_write_enable;
+	// ---------------------------------------------------------
+	// Write-back Stage
+	// ---------------------------------------------------------
 
-logic [DWIDTH-1:0] data_out;
+	logic w_destination;
+	logic w_enable;
+	logic [DWIDTH-1:0] w_data; 	// shouldnt this go back to the rf lol
+	logic [AWIDTH-1:0] w_pc;	// need to modify fetch for this one
 
-assign data_out = w_data;
+	writeback #(
+		.DWIDTH(DWIDTH), 
+		.AWIDTH(AWIDTH)
+	) writeback1 (
+		.pc_i (f_pc),
+		.alu_res_i (e_alu_res),
+		.memory_data_i (m_data_o),
+		.wbsel_i (wbsel_out),
+		.brtaken_i (e_br_taken),
 
+		.writeback_data_o (w_data),
+		.next_pc_o (w_pc)
+	);
+
+	assign w_destination = r_write_destination;
+	assign w_enable = r_write_enable;
 
 	// program termination logic
 	reg is_program = 0;
 	always_ff @(posedge clk) begin
-		// [TODO] Ask professor if data_out here is f_insn
-		if (data_out == 32'h00000073) $finish;  // directly terminate if see ecall
-		if (data_out == 32'h00008067) is_program = 1;  // if see ret instruction, it is simple program test
-		// [TODO] Change register_file_0.registers[2] to the appropriate x2 register based on your module instantiations...
+		if (f_insn == 32'h00000073) $finish;  // directly terminate if see ecall
+		if (f_insn == 32'h00008067) is_program = 1;  // if see ret instruction, it is simple program test
 		if (is_program && (e_register_file.regfile[2] == 32'h01000000 + `MEM_DEPTH)) $finish;
 	end
 

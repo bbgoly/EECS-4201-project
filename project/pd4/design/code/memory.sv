@@ -27,6 +27,7 @@ module memory #(
 	input logic rst,
 	input logic [AWIDTH-1:0] addr_i = BASE_ADDR,
 	input logic [DWIDTH-1:0] data_i,
+	input logic [2:0] size_encoded_i,
 	input logic read_en_i,
 	input logic write_en_i,
 	// outputs
