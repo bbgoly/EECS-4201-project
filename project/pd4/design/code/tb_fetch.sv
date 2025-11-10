@@ -49,7 +49,7 @@ module tb_fetch;
 		.pc_i(pc_o),
 		.alu_res_i(branch_target_i),
 		.memory_data_i(),		// unused for this test
-		.wbsel_i(2'b10),		// fix write-back to select PC
+		.wbsel_i(),				// unused for this test
 		.brtaken_i(brtaken_i),
 
 		.writeback_data_o(),	// unused for this test
@@ -63,7 +63,9 @@ module tb_fetch;
 	task reset_uut;
 		rst = 1;
 		pcsel_i = 0;
-		target_pc_i = 'x;
+
+		brtaken_i = 'x;
+		branch_target_i = 'x;
 		repeat (2) @(posedge clk); // hold reset for 2 cycles
 		rst = 0;
 	endtask
@@ -80,6 +82,7 @@ module tb_fetch;
 		branch_target_i = target_pc;
 		
 		@(posedge clk);
+		@(posedge clk); // wait for pc to update
 
 		if (pc_o !== expected_pc) begin
 			$display("TEST FAILED: %s at time %0t\nExpected: %h\nGot: %h", desc, $time, expected_pc, pc_o);
@@ -104,7 +107,7 @@ module tb_fetch;
 		// Test 2: PC should increment by 4 when pcsel_i is 0
 		test_pc_update(0, 'x, 'x, BASEADDR + 4, "PC increment by 4");
 
-		// Test 3: PC should jump to target_pc_i when pcsel_i is 1 and branch taken
+		// Test 3: PC should jump to branch_target_i when pcsel_i is 1 and branch taken
 		test_pc_update(1, 1, 32'h01000020, 32'h01000020, "Branch taken, PC jump to target address");
 
 		// Test 4: PC should increment by 4 from target address when pcsel_i is 1 but branch not taken
@@ -114,7 +117,7 @@ module tb_fetch;
 		// Test 5: PC should continue to increment by 4 when pcsel_i is 0
 		test_pc_update(0, 'x, 'x, 32'h01000028, "PC increment by 4 from last address");
 
-		// Test 6: PC should jump to target_pc_i when pcsel_i is 1 and branch taken again
+		// Test 6: PC should jump to branch_target_i when pcsel_i is 1 and branch taken again
 		test_pc_update(1, 1, 32'h01000040, 32'h01000040, "Branch taken again, PC jump to new target address");
 
 		$display("=== Fetch Tests Complete ===");
