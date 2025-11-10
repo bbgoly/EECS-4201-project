@@ -64,9 +64,8 @@ module tb_fetch;
 		rst = 1;
 		pcsel_i = 0;
 		target_pc_i = 'x;
-		#15;
+		repeat (2) @(posedge clk); // hold reset for 2 cycles
 		rst = 0;
-		#10;
 	endtask
 
 	task test_pc_update(
@@ -79,7 +78,8 @@ module tb_fetch;
 		pcsel_i = pcsel;
 		brtaken_i = branch_taken;
 		branch_target_i = target_pc;
-		#10;
+		
+		@(posedge clk);
 
 		if (pc_o !== expected_pc) begin
 			$display("TEST FAILED: %s at time %0t\nExpected: %h\nGot: %h", desc, $time, expected_pc, pc_o);
