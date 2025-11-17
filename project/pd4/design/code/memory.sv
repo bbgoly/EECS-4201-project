@@ -43,7 +43,7 @@ module memory #(
 	logic [7:0] main_memory [0:MEM_BYTES - 1];
 	
     logic [AWIDTH-1:0] address;
-	assign address = addr_i - BASE_ADDR;
+	assign address = (addr_i >= BASE_ADDR ? addr_i - BASE_ADDR : addr_i) & (MEM_BYTES - 1);
 	
     int i;
 	initial begin
@@ -70,7 +70,7 @@ module memory #(
 		if (read_en_i) begin
 			if ($isunknown(addr_i)) begin
 				data_o = '0;
-			end else if ((addr_i >= BASE_ADDR) && (addr_i + 32'd3 < BASE_ADDR + MEM_BYTES)) begin
+			end else begin
 				// Word-aligned fetch: little-endian assembly
 				unique case (size_encoded_i)
 					// sign-extended read
@@ -97,9 +97,6 @@ module memory #(
 							main_memory[address]
 						};
 				endcase
-			end else begin
-				// data_o = 32'hDEAD_BEEF;
-				$display("IMEMORY: OOB read @0x%08h (mapped 0x%08h)", addr_i, address);
 			end
 		end
 	end
