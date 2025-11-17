@@ -43,7 +43,9 @@ module memory #(
 	logic [7:0] main_memory [0:MEM_BYTES - 1];
 	
     logic [AWIDTH-1:0] address;
-	assign address = (addr_i >= BASE_ADDR ? addr_i - BASE_ADDR : addr_i) & (MEM_BYTES - 1);
+	assign address = addr_i >= BASE_ADDR 
+		? (addr_i - BASE_ADDR) % MEM_BYTES
+		: addr_i;
 	
     int i;
 	initial begin
