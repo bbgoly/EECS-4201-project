@@ -58,11 +58,8 @@ module memory #(
 		end
 
         // Initialize remaining memory to zero
-        for (i = 4 * `LINE_COUNT; i < MEM_BYTES / 4; i++) begin
+        for (i = 4 * `LINE_COUNT; i < MEM_BYTES; i++) begin
             main_memory[i] = 8'd0;
-			main_memory[i + 1] = 8'd0;
-			main_memory[i + 2] = 8'd0;
-			main_memory[i + 3] = 8'd0;
         end
 		$display("IMEMORY: Loaded %0d 32-bit words from %s", `LINE_COUNT, `MEM_PATH);
 	end

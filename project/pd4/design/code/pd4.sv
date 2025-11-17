@@ -275,13 +275,15 @@ module pd4 #(
 		.rst(reset),
 		.addr_i(m_address),
 		.data_i(m_data_i),
-		.size_encoded_i(m_size_encoded),
+		.size_encoded_i((d_opcode == LOAD_OPCODE || d_opcode == STYPE_OPCODE) ? m_size_encoded : MEM_WORD),
 		.read_en_i(1'b1),
 		.write_en_i(memwren_out),
 
 		.data_o(m_data_o)
 	);
 
+	// Since testbenches expect memory reads on every instruction, we must default to reading words
+	// (see size_encoded_i above)
 	assign m_size_encoded = d_funct3;
 	assign m_address = e_alu_res;
 	assign m_data_i = r_read_rs2_data;
