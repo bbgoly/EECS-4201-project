@@ -237,7 +237,7 @@ module pd4 #(
 	);
 
 	always_comb begin : branch_taken_logic
-		e_br_taken = (d_opcode == JTYPE_OPCODE && d_rd != 5'd0) || (d_opcode == JALR_OPCODE); // JAL and JALR always branch
+		e_br_taken = 0;
 		if (d_opcode == BTYPE_OPCODE) begin
 			unique case (d_funct3)
 				BEQ_FUNCT3: e_br_taken = breq_o;
@@ -275,7 +275,7 @@ module pd4 #(
 		.rst(reset),
 		.addr_i(m_address),
 		.data_i(m_data_i),
-		.size_encoded_i((d_opcode == LOAD_OPCODE || d_opcode == STYPE_OPCODE) ? m_size_encoded : MEM_WORD),
+		.size_encoded_i((d_opcode == LOAD_OPCODE || d_opcode == STYPE_OPCODE) ? d_funct3 : MEM_WORD),
 		.read_en_i(1'b1),
 		.write_en_i(memwren_out),
 
@@ -284,7 +284,7 @@ module pd4 #(
 
 	// Since testbenches expect memory reads on every instruction, we must default to reading words
 	// (see size_encoded_i above)
-	assign m_size_encoded = d_funct3;
+	assign m_size_encoded = d_funct3[1:0];
 	assign m_address = e_alu_res;
 	assign m_data_i = r_read_rs2_data;
 
@@ -305,20 +305,17 @@ module pd4 #(
 		.alu_res_i (e_alu_res),
 		.memory_data_i (m_data_o),
 		.wbsel_i (wbsel_out),
-		.brtaken_i (e_br_taken),
+		.brtaken_i (e_br_taken | pcsel_out),
 
 		.writeback_data_o (w_data),
 		.next_pc_o (f_target_pc)
 	);
 
+	assign w_pc = f_pc;
 	assign w_destination = r_write_destination;
 	assign w_enable = r_write_enable;
 
 	assign r_write_data = w_data;
-	assign w_pc = pcsel_out ? f_target_pc : f_pc; 	// should just be w_pc = f_target_pc
-													// since pcsel controls whether to update f_pc or not,
-													// but theres a test that fails if w_pc changes
-													// even if pcsel is 0
 
 	// program termination logic
 	reg is_program = 0;
