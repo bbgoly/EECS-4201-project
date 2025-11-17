@@ -36,17 +36,19 @@ module memory #(
 	output logic [DWIDTH-1:0] data_o
 );
 
-	localparam int MEM_BYTES = `LINE_COUNT * (DWIDTH/8);
+	localparam int MEM_BYTES = `MEM_DEPTH;//`LINE_COUNT * (DWIDTH/8);
 
+    // Byte-addressable memory
 	logic [DWIDTH-1:0] temp_memory [0:`LINE_COUNT - 1];
-	// Byte-addressable memory
-	logic [7:0] main_memory [0:MEM_BYTES - 1];  // Byte-addressable memory
-	logic [AWIDTH-1:0] address;
+	logic [7:0] main_memory [0:MEM_BYTES - 1];
+	
+    logic [AWIDTH-1:0] address;
 	assign address = addr_i - BASE_ADDR;
-	int i;
-
+	
+    int i;
 	initial begin
 		$readmemh(`MEM_PATH, temp_memory);
+        
 		// Load data from temp_memory into main_memory
 		for (i = 0; i < `LINE_COUNT; i++) begin
 			main_memory[4*i]     = temp_memory[i][7:0];
@@ -54,6 +56,14 @@ module memory #(
 			main_memory[4*i + 2] = temp_memory[i][23:16];
 			main_memory[4*i + 3] = temp_memory[i][31:24];
 		end
+
+        // Initialize remaining memory to zero
+        for (i = 4 * `LINE_COUNT; i < MEM_BYTES / 4; i++) begin
+            main_memory[i] = 8'd0;
+			main_memory[i + 1] = 8'd0;
+			main_memory[i + 2] = 8'd0;
+			main_memory[i + 3] = 8'd0;
+        end
 		$display("IMEMORY: Loaded %0d 32-bit words from %s", `LINE_COUNT, `MEM_PATH);
 	end
 
@@ -91,7 +101,7 @@ module memory #(
 						};
 				endcase
 			end else begin
-				data_o = 32'hDEAD_BEEF;
+				// data_o = 32'hDEAD_BEEF;
 				$display("IMEMORY: OOB read @0x%08h (mapped 0x%08h)", addr_i, address);
 			end
 		end

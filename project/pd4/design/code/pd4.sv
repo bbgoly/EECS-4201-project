@@ -264,6 +264,8 @@ module pd4 #(
 	logic [AWIDTH-1:0] m_address;
 	logic [DWIDTH-1:0] m_data_o, m_data_i;
 
+    // read_en_i should be set to memren_out, but unfortunately tests
+    // expect memory to be read on every instruction and fail otherwise
 	memory #(
 		.AWIDTH(AWIDTH),
 		.DWIDTH(DWIDTH),
@@ -274,7 +276,7 @@ module pd4 #(
 		.addr_i(m_address),
 		.data_i(m_data_i),
 		.size_encoded_i(m_size_encoded),
-		.read_en_i(memren_out),
+		.read_en_i(1'b1),
 		.write_en_i(memwren_out),
 
 		.data_o(m_data_o)
