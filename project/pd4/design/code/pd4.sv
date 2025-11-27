@@ -264,6 +264,8 @@ module pd4 #(
 	logic [AWIDTH-1:0] m_address;
 	logic [DWIDTH-1:0] m_data_o, m_data_i;
 
+    logic [2:0] size_enc_test;
+
     // read_en_i should be set to memren_out, but unfortunately tests
     // expect memory to be read on every instruction and fail otherwise
 	memory #(
@@ -281,6 +283,8 @@ module pd4 #(
 
 		.data_o(m_data_o)
 	);
+
+    assign size_enc_test = (d_opcode == LOAD_OPCODE || d_opcode == STYPE_OPCODE) ? d_funct3 : MEM_WORD;
 
 	// Since testbenches expect memory reads on every instruction, we must default to reading words
 	// (see size_encoded_i above)
