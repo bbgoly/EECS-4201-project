@@ -34,7 +34,7 @@ module memory #(
 	input logic write_en_i,
 	// outputs
 	output logic [DWIDTH-1:0] data_o,
-    output logic [AWIDTH-1:0] addr_o
+    output logic [127:0] addr_o
 );
 
 	localparam int MEM_BYTES = `MEM_DEPTH;//`LINE_COUNT * (DWIDTH/8);
@@ -47,6 +47,8 @@ module memory #(
 	assign address = addr_i >= BASE_ADDR 
 		? (addr_i - BASE_ADDR) % MEM_BYTES
 		: addr_i;
+
+    assign addr_o = {address + 3, address + 2, address + 1, address};
 	
     int i;
 	initial begin
@@ -110,11 +112,18 @@ module memory #(
 			if ((addr_i >= BASE_ADDR) && (addr_i + 32'd3 < BASE_ADDR + MEM_BYTES)) begin
 				// Word-aligned store: little-endian assembly
 				unique case (size_encoded_i & 3'b011) // mask off upper bit used for unsigned load funct3
-					MEM_BYTE: main_memory[address] <= data_i[7:0]; // SB
+					MEM_BYTE: begin // SB
+                        main_memory[address] <= data_i[7:0];
+                        main_memory[address + 1] <= '0;
+                        main_memory[address + 2] <= '0;
+                        main_memory[address + 3] <= '0;
+                    end
 					
 					MEM_HALF: begin // SH
 						main_memory[address] <= data_i[7:0];
 						main_memory[address + 1] <= data_i[15:8];
+                        main_memory[address + 2] <= '0;
+                        main_memory[address + 3] <= '0;
 					end
 
 					MEM_WORD: begin // SW

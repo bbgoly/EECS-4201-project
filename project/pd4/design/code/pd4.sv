@@ -261,7 +261,8 @@ module pd4 #(
 	// ---------------------------------------------------------
 
 	logic [2:0] m_size_encoded;
-	logic [AWIDTH-1:0] m_address, m_address_o, m_address_o2;
+	logic [AWIDTH-1:0] m_address;
+    logic [127:0] m_address_o, m_address_o2;
 	logic [DWIDTH-1:0] m_data_o, m_data_i;
 
     logic [2:0] size_enc_test;
