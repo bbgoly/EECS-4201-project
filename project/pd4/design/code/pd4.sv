@@ -261,7 +261,7 @@ module pd4 #(
 	// ---------------------------------------------------------
 
 	logic [2:0] m_size_encoded;
-	logic [AWIDTH-1:0] m_address;
+	logic [AWIDTH-1:0] m_address, m_address_o, m_address_o2;
 	logic [DWIDTH-1:0] m_data_o, m_data_i;
 
     logic [2:0] size_enc_test;
@@ -281,9 +281,11 @@ module pd4 #(
 		.read_en_i(1'b1),
 		.write_en_i(memwren_out),
 
-		.data_o(m_data_o)
+		.data_o(m_data_o),
+        .addr_o(m_address_o)
 	);
 
+    assign m_address_o2 = m_address_o;
     assign size_enc_test = (d_opcode == LOAD_OPCODE || d_opcode == STYPE_OPCODE) ? d_funct3 : MEM_WORD;
 
 	// Since testbenches expect memory reads on every instruction, we must default to reading words
