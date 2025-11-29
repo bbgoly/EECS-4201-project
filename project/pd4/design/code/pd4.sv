@@ -282,7 +282,7 @@ module pd4 #(
 		.read_en_i(1'b1),
 		.write_en_i(memwren_out),
 
-		.data_o(m_data_o),
+		.data_o(m_data_o)
         // .addr_o(m_address_o) // was being used for debugging address wrapping
 	);
 

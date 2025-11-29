@@ -33,8 +33,8 @@ module memory #(
 	input logic read_en_i,
 	input logic write_en_i,
 	// outputs
-	output logic [DWIDTH-1:0] data_o,
-    output logic [127:0] addr_o
+	output logic [DWIDTH-1:0] data_o
+//    output logic [127:0] addr_o
 );
 
 	localparam int MEM_BYTES = `MEM_DEPTH;//`LINE_COUNT * (DWIDTH/8);
@@ -48,7 +48,7 @@ module memory #(
 		? (addr_i - BASE_ADDR) % MEM_BYTES
 		: addr_i;
 
-    assign addr_o = {address + 3, address + 2, address + 1, address};
+  //  assign addr_o = {address + 3, address + 2, address + 1, address};
 	
     int i;
 	initial begin
