@@ -80,25 +80,30 @@ module memory #(
 				unique case (size_encoded_i)
 					// sign-extended read
 					MEM_BYTE: data_o = {{24{main_memory[address][7]}}, main_memory[address]}; // LB
-					MEM_HALF: data_o = {{16{main_memory[address + 1][7]}}, main_memory[address + 1], main_memory[address]}; // LH
+					MEM_HALF: 
+						data_o = {
+							{16{main_memory[(address + 1) & (MEM_BYTES - 1)][7]}},
+							main_memory[(address + 1) & (MEM_BYTES - 1)], 
+							main_memory[address]
+						}; // LH
 					
 					MEM_WORD: // Execute LW or fetch word-aligned instruction
 						data_o = {
-							main_memory[address + 3],
-							main_memory[address + 2],
-							main_memory[address + 1],
+							main_memory[(address + 3) & (MEM_BYTES - 1)],
+							main_memory[(address + 2) & (MEM_BYTES - 1)],
+							main_memory[(address + 1) & (MEM_BYTES - 1)],
 							main_memory[address]
 						};
 
 					// zero-extended read
 					MEM_LBU: data_o = {24'd0, main_memory[address]}; // LBU
-					MEM_LHU: data_o = {16'd0, main_memory[address + 1], main_memory[address]}; // LHU
+					MEM_LHU: data_o = {16'd0, main_memory[(address + 1) & (MEM_BYTES - 1)], main_memory[address]}; // LHU
 
 					default:
 						data_o = {
-							main_memory[address + 3],
-							main_memory[address + 2],
-							main_memory[address + 1],
+							main_memory[(address + 3) & (MEM_BYTES - 1)],
+							main_memory[(address + 2) & (MEM_BYTES - 1)],
+							main_memory[(address + 1) & (MEM_BYTES - 1)],
 							main_memory[address]
 						};
 				endcase
@@ -112,25 +117,18 @@ module memory #(
 			if ((addr_i >= BASE_ADDR) && (addr_i + 32'd3 < BASE_ADDR + MEM_BYTES)) begin
 				// Word-aligned store: little-endian assembly
 				unique case (size_encoded_i & 3'b011) // mask off upper bit used for unsigned load funct3
-					MEM_BYTE: begin // SB
-                        main_memory[address] <= data_i[7:0];
-                        main_memory[address + 1] <= '0;
-                        main_memory[address + 2] <= '0;
-                        main_memory[address + 3] <= '0;
-                    end
+					MEM_BYTE: main_memory[address] <= data_i[7:0]; // SB
 					
 					MEM_HALF: begin // SH
 						main_memory[address] <= data_i[7:0];
-						main_memory[address + 1] <= data_i[15:8];
-                        main_memory[address + 2] <= '0;
-                        main_memory[address + 3] <= '0;
+						main_memory[(address + 1) & (MEM_BYTES - 1)] <= data_i[15:8];
 					end
 
 					MEM_WORD: begin // SW
 						main_memory[address] <= data_i[7:0];
-						main_memory[address + 1] <= data_i[15:8];
-						main_memory[address + 2] <= data_i[23:16];
-						main_memory[address + 3] <= data_i[31:24];
+						main_memory[(address + 1) & (MEM_BYTES - 1)] <= data_i[15:8];
+						main_memory[(address + 2) & (MEM_BYTES - 1)] <= data_i[23:16];
+						main_memory[(address + 3) & (MEM_BYTES - 1)] <= data_i[31:24];
 					end
 				endcase
 				$display("IMEMORY: Wrote 0x%08h to 0x%08h", data_i, addr_i);
