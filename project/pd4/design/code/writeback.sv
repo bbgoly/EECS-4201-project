@@ -27,7 +27,7 @@
      input logic [DWIDTH-1:0] alu_res_i,
      input logic [DWIDTH-1:0] memory_data_i,
      input logic [1:0] wbsel_i,
-     input logic brtaken_i,
+    //  input logic brtaken_i,
 
      output logic [DWIDTH-1:0] writeback_data_o,
      output logic [AWIDTH-1:0] next_pc_o
@@ -36,15 +36,17 @@
     // ------------------------
     // Next PC computation
     // ------------------------
-    always_comb begin
-        if (brtaken_i) begin
-            // Use ALU result as the next PC when branch/jump is taken
-            next_pc_o = alu_res_i;
-        end else begin
-            // Otherwise, proceed to immediate next instruction
-            next_pc_o = pc_i + 32'd4;
-        end
-    end
+    // always_comb begin
+    //     if (brtaken_i) begin
+    //         // Use ALU result as the next PC when branch/jump is taken
+    //         next_pc_o = alu_res_i;
+    //     end else begin
+    //         // Otherwise, proceed to immediate next instruction
+    //         next_pc_o = pc_i + 32'd4;
+    //     end
+    // end
+
+	assign next_pc_o = alu_res_i;
 
     // ------------------------
     // Writeback data selection

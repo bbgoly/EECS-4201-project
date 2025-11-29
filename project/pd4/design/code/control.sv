@@ -132,7 +132,7 @@ module control #(
             // Branch (BEQ, BNE, etc.)
             // =====================================================
             BTYPE_OPCODE: begin
-                pcsel_o   = 1;       // Control chooses branch target
+                pcsel_o   = 0;       // External branch logic used, pcsel will be used for jumps
                 regwren_o = 0;
                 immsel_o  = 1;
                 rs1sel_o  = 1;

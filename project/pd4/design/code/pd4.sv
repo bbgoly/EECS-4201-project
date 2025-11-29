@@ -23,11 +23,11 @@ module pd4 #(
 	// ---------------------------------------------------------
 	// Fetch Stage
 	// ---------------------------------------------------------
-	// Responsible for maintaining the program counter.
-	// On reset, PC is set to BASEADDR. On each clock edge,
-	// PC increments by 4 to fetch the next instruction.
+	// Responsible for maintaining the program counter. On reset,
+	// PC is set to BASEADDR. On each clock edge, PC either increments
+	// by 4 or jumps to a target PC to fetch the next instruction.
 
-	logic f_pcsel_i;
+	logic f_pcsel_i; // produced by branch logic and control path
 	logic [DWIDTH-1:0] f_pc;
 	logic [DWIDTH-1:0] f_insn;
 	logic [AWIDTH-1:0] f_target_pc;
@@ -50,7 +50,7 @@ module pd4 #(
 	// Instruction Memory
 	// ---------------------------------------------------------
 	// Reads the instruction at the address provided by fetch.
-	// The instruction memory is pre-loaded with machine code.
+	// The read-only instruction memory is pre-loaded with machine code.
 
 	logic [DWIDTH-1:0] m_pc;
 
@@ -75,7 +75,7 @@ module pd4 #(
 	// ---------------------------------------------------------
 	// Decode Stage
 	// ---------------------------------------------------------
-	// Extracts fields such as opcode, rd, rs1, rs2, funct3,
+	// Extracts instruction fields such as opcode, rd, rs1, rs2, funct3,
 	// and funct7 from the instruction fetched in the previous stage.
 	// Also passes along the program counter for use in later stages.
 
@@ -130,9 +130,9 @@ module pd4 #(
 	// Control Path
 	// ---------------------------------------------------------
 	// Produces the control signals used to steer data between
-	// the different stages of the processor. These signals
-	// control register file writes, ALU operation, and memory
-	// access based on instruction type.
+	// the different stages of the core. These signals control
+	// register file writes, ALU operation, and memory access 
+	// based on instruction type.
 
 	logic pcsel_out;
 	logic immsel_out;
@@ -160,8 +160,6 @@ module pd4 #(
 		.wbsel_o (wbsel_out),
 		.alusel_o (alusel_out)
 	);
-
-	assign f_pcsel_i = pcsel_out;
 
 	// ---------------------------------------------------------
 	// Register File
@@ -194,7 +192,7 @@ module pd4 #(
     assign r_write_enable = regwren_out;
 
 	// ---------------------------------------------------------
-	// ALU
+	// Execute Stage 
 	// ---------------------------------------------------------
 
 	logic e_br_taken;
@@ -255,6 +253,7 @@ module pd4 #(
 	end
 
 	assign e_pc = d_pc;
+	assign f_pcsel_i = e_br_taken | pcsel_out;
 
 	// ---------------------------------------------------------
 	// Memory Stage
@@ -262,10 +261,11 @@ module pd4 #(
 
 	logic [2:0] m_size_encoded;
 	logic [AWIDTH-1:0] m_address;
-    logic [127:0] m_address_o, m_address_o2;
 	logic [DWIDTH-1:0] m_data_o, m_data_i;
 
-    logic [2:0] size_enc_test;
+	// was being used to view waveform of address+1, +2, +3
+    // logic [127:0] m_address_o, m_address_o2;
+    // logic [2:0] size_enc_test; // was being used for debugging
 
     // read_en_i should be set to memren_out, but unfortunately tests
     // expect memory to be read on every instruction and fail otherwise
@@ -283,11 +283,12 @@ module pd4 #(
 		.write_en_i(memwren_out),
 
 		.data_o(m_data_o),
-        .addr_o(m_address_o)
+        // .addr_o(m_address_o) // was being used for debugging address wrapping
 	);
 
-    assign m_address_o2 = m_address_o;
-    assign size_enc_test = (d_opcode == LOAD_OPCODE || d_opcode == STYPE_OPCODE) ? d_funct3 : MEM_WORD;
+	// both were being used for debugging address wrapping issues
+    // assign m_address_o2 = m_address_o;
+    // assign size_enc_test = (d_opcode == LOAD_OPCODE || d_opcode == STYPE_OPCODE) ? d_funct3 : MEM_WORD;
 
 	// Since testbenches expect memory reads on every instruction, we must default to reading words
 	// (see size_encoded_i above)
@@ -312,7 +313,7 @@ module pd4 #(
 		.alu_res_i (e_alu_res),
 		.memory_data_i (m_data_o),
 		.wbsel_i (wbsel_out),
-		.brtaken_i (e_br_taken | pcsel_out),
+		// .brtaken_i (e_br_taken | pcsel_out), // no longer needed
 
 		.writeback_data_o (w_data),
 		.next_pc_o (f_target_pc)
