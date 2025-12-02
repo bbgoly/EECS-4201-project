@@ -28,14 +28,12 @@
 module decode #(
     parameter int DWIDTH=32,
     parameter int AWIDTH=32
-) (
-	// inputs
+)(
 	input logic clk,
 	input logic rst,
 	input logic [DWIDTH - 1:0] insn_i,
 	input logic [DWIDTH - 1:0] pc_i,
 
-	// outputs
 	output logic [AWIDTH-1:0] pc_o,
 	output logic [DWIDTH-1:0] insn_o,
 	output logic [6:0] opcode_o,
@@ -53,9 +51,9 @@ module decode #(
 	assign opcode_o = insn_i[6:0];
 
 	assign rd_o = insn_i[11:7];
-	assign funct3_o = insn_i[14:12];
 	assign rs1_o = insn_i[19:15];
 	assign rs2_o = insn_i[24:20];
+	assign funct3_o = insn_i[14:12];
 	assign funct7_o = insn_i[31:25];
 	assign shamt_o = insn_i[24:20];
 

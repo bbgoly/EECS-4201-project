@@ -8,8 +8,10 @@
  * 1) 32-bit PC pc_i
  * 2) 32-bit rs1 data rs1_i
  * 3) 32-bit rs2 data rs2_i
- * 4) 3-bit funct3 funct3_i
- * 5) 7-bit funct7 funct7_i
+ * 4) 7-bit opcode opcode_i
+ * 5) 3-bit funct3 funct3_i
+ * 6) 7-bit funct7 funct7_i
+ * 7) 4-bit ALU select alusel_i
  *
  * Outputs:
  * 1) 32-bit result of ALU res_o
@@ -21,7 +23,7 @@
 module alu #(
     parameter int DWIDTH=32,
     parameter int AWIDTH=32
-) (
+)(
     input logic [AWIDTH-1:0] pc_i,
     input logic [DWIDTH-1:0] rs1_i,
     input logic [DWIDTH-1:0] rs2_i,
@@ -34,8 +36,8 @@ module alu #(
     output logic brtaken_o
 );
 
-	// brtaken_o is computed in top level module using branch_control output instead
-	// would compute in this module, but rs1_i and rs2_i are often replaced 
+	// brtaken_o is computed in top level module using branch_control output instead.
+	// We would compute it in this module, but rs1_i and rs2_i are often replaced 
 	// by pc and/or an immediate based on control signals
 
 	always_comb begin

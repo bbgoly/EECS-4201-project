@@ -29,13 +29,12 @@
 
 module control #(
 	parameter int DWIDTH=32
-) (
-	// inputs
+)(
 	input logic [DWIDTH-1:0] insn_i,
 	input logic [6:0] opcode_i,
 	input logic [6:0] funct7_i,
 	input logic [2:0] funct3_i,
-	// outputs
+
 	output logic pcsel_o,
 	output logic immsel_o,
 	output logic regwren_o,

@@ -27,10 +27,10 @@ module register_file #(
     input  logic       [4:0]         rd_i,
     input  logic [DWIDTH-1:0]        datawb_i,
     input  logic                     regwren_i,
+
     output logic [DWIDTH-1:0]        rs1data_o,
     output logic [DWIDTH-1:0]        rs2data_o
 );
-
 
     localparam logic [DWIDTH-1:0] STACK_INIT = 32'h0110_0000;
 

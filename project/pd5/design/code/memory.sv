@@ -1,4 +1,5 @@
 /*
+ * Yousif Kndkji
  * Module: memory
  *
  * Description: Byte-addressable memory implementation. Supports both read and write operations.
@@ -9,8 +10,9 @@
  * 2) rst signal
  * 3) AWIDTH address addr_i
  * 4) DWIDTH data to write data_i
- * 5) read enable signal read_en_i
- * 6) write enable signal write_en_i
+ * 5) 3-bit encoded size size_encoded_i
+ * 6) read enable signal read_en_i
+ * 7) write enable signal write_en_i
  *
  * Outputs:
  * 1) DWIDTH data output data_o
@@ -19,12 +21,10 @@
 `include "constants.svh"
 
 module memory #(
-	// parameters
 	parameter int AWIDTH = 32,
 	parameter int DWIDTH = 32,
 	parameter logic [31:0] BASE_ADDR = 32'h01000000
-) (
-	// inputs
+)(
 	input logic clk,
 	input logic rst,
 	input logic [AWIDTH-1:0] addr_i = BASE_ADDR,
@@ -32,12 +32,11 @@ module memory #(
 	input logic [2:0] size_encoded_i,
 	input logic read_en_i,
 	input logic write_en_i,
-	// outputs
+
 	output logic [DWIDTH-1:0] data_o
-//    output logic [127:0] addr_o
 );
 
-	localparam int MEM_BYTES = `MEM_DEPTH;//`LINE_COUNT * (DWIDTH/8);
+	localparam int MEM_BYTES = `MEM_DEPTH;
 
     // Byte-addressable memory
 	logic [DWIDTH-1:0] temp_memory [0:`LINE_COUNT - 1];
@@ -47,8 +46,6 @@ module memory #(
 	assign address = addr_i >= BASE_ADDR 
 		? (addr_i - BASE_ADDR) % MEM_BYTES
 		: addr_i;
-
-  //  assign addr_o = {address + 3, address + 2, address + 1, address};
 	
     int i;
 	initial begin
