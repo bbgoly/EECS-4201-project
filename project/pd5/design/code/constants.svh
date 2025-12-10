@@ -2,6 +2,7 @@
 `define CONSTANTS_SVH_
 
 parameter logic [31:0] ZERO = 32'd0;
+parameter logic [31:0] NOP = 32'h00000013; // addi x0, x0, 0
 
 // Instruction type opcodes
 parameter logic [6:0] RTYPE_OPCODE = 7'b0110011;

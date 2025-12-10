@@ -13,7 +13,7 @@ export SIM_DIR     = $(SIM_ROOT)/test_pd
 all: make_sim_dir compile run
 
 # define parameters
-MEM_PATH              ?= $(CL_ROOT)/verif/data/${TEST}.x
+MEM_PATH              ?= $(CL_ROOT)/verif/${TEST}.x # Was originally data/${TEST}.x, changed to be able to run micro-tests
 MEM_PATH_NOT_DIR			:= $(notdir $(MEM_PATH))
 LINE_COUNT            ?= $(shell echo `wc -l < $(MEM_PATH)`)
 MEM_PATH_STR          ?= \"$(abspath $(MEM_PATH))\"

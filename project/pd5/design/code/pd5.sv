@@ -19,10 +19,72 @@ module pd5 #(
     input logic clk,
     input logic reset
 );
+	// ---------------------------------------------------------
+	// Pipeline Registers
+	// ---------------------------------------------------------
 
-logic [31:0] if_id_pc;
-logic [31:0] if_id_insn;
-		
+	// IF/ID pipeline registers
+	logic [AWIDTH-1:0] if_id_pc;
+	logic [DWIDTH-1:0] if_id_insn;
+
+	// ID/EX pipeline registers
+	logic [AWIDTH-1:0] id_ex_pc;
+
+	// Decoded instruction fields
+	logic [6:0] id_ex_opcode;
+	logic [4:0] id_ex_rd;
+	logic [4:0] id_ex_rs1;
+	logic [4:0] id_ex_rs2;
+	logic [2:0] id_ex_funct3;
+	logic [6:0] id_ex_funct7;
+	logic [DWIDTH-1:0] id_ex_imm;
+
+	// Control signals
+	logic id_ex_pcsel;
+	logic id_ex_immsel;
+	logic id_ex_regwren;
+	logic id_ex_rs1sel;
+	logic id_ex_rs2sel;
+	logic id_ex_memren;
+	logic id_ex_memwren;
+	logic [1:0] id_ex_wbsel;
+	logic [3:0] id_ex_alusel;
+
+	// Register file outputs
+	logic [DWIDTH-1:0] id_ex_rs1_data;
+	logic [DWIDTH-1:0] id_ex_rs2_data;
+
+	// Branch taken signal
+	logic id_ex_br_taken;
+
+	// EX/MEM pipeline registers
+	logic [AWIDTH-1:0] ex_mem_pc;
+	logic [DWIDTH-1:0] ex_mem_rs2_data; // Only rs2 data is needed past EX stage for stores
+	logic [6:0] ex_mem_opcode; // Opcode and funct3 purpose in memory stage described below
+	logic [4:0] ex_mem_rd;
+	logic [2:0] ex_mem_funct3;
+
+	// Control signals
+	logic ex_mem_regwren;
+	logic ex_mem_memren;
+	logic ex_mem_memwren;
+	logic [1:0] ex_mem_wbsel;
+
+	// ALU output
+	logic [DWIDTH-1:0] ex_mem_alu_res;
+
+	// MEM/WB pipeline registers
+	logic [AWIDTH-1:0] mem_wb_pc;
+	logic [DWIDTH-1:0] mem_wb_alu_res;
+	logic [4:0] mem_wb_rd;
+
+	// Control signals
+	logic mem_wb_regwren;
+	logic [1:0] mem_wb_wbsel;
+
+	// Data memory output
+	logic [DWIDTH-1:0] mem_wb_mem_data;
+
 	// ---------------------------------------------------------
 	// Fetch Stage
 	// ---------------------------------------------------------
@@ -31,22 +93,21 @@ logic [31:0] if_id_insn;
 	// by 4 or jumps to a target PC to fetch the next instruction.
 
 	logic f_pcsel_i; // produced by branch logic and control path
-	logic [DWIDTH-1:0] f_pc;
-	logic [DWIDTH-1:0] f_insn;
+	logic [AWIDTH-1:0] f_pc;
 	logic [AWIDTH-1:0] f_target_pc;
 
 	fetch #(
 		.AWIDTH(AWIDTH),
 		.DWIDTH(DWIDTH),
 		.BASEADDR(32'h01000000)
-	) fetch1 (
+	) ifetch (
 		.clk(clk),
 		.rst(reset),
 		.pcsel_i(f_pcsel_i),
 		.target_pc_i(f_target_pc),
 		
-		.pc_o(f_pc),            
-		.insn_o()         
+		.pc_o(f_pc),
+		.insn_o()
 	);
 
 	// ---------------------------------------------------------
@@ -55,7 +116,7 @@ logic [31:0] if_id_insn;
 	// Reads the instruction at the address provided by fetch.
 	// The read-only instruction memory is pre-loaded with machine code.
 
-	logic [DWIDTH-1:0] m_pc;
+	logic [DWIDTH-1:0] f_insn;
 
 	memory #(
 		.AWIDTH(AWIDTH),
@@ -64,7 +125,7 @@ logic [31:0] if_id_insn;
 	) imemory (
 		.clk(clk),
 		.rst(reset),
-		.addr_i(m_pc),
+		.addr_i(f_pc),
 		.data_i(),
 		.size_encoded_i(MEM_WORD),
 		.read_en_i(1'b1),
@@ -73,22 +134,19 @@ logic [31:0] if_id_insn;
 		.data_o(f_insn)
 	);
 
-	assign m_pc = f_pc;
-
-// IF/ID pipeline register 
-
-always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-        if_id_pc   <= 32'b0;
-        if_id_insn <= 32'h00000013; // NOP
-    end else if (if_flush) begin
-        if_id_pc   <= 32'b0;
-        if_id_insn <= 32'h00000013;
-    end else if (if_id_write) begin
-        if_id_pc   <= m_pc;
-        if_id_insn <= f_insn;
-    end
-end
+	// IF/ID pipeline register logic
+	always_ff @(posedge clk or posedge reset) begin : if_id_pipeline_reg
+		if (reset) begin
+			if_id_pc   <= 32'b0;
+			if_id_insn <= NOP;
+		// end else if (f_pcsel_i) begin
+		// 	if_id_pc   <= 32'b0;
+		// 	if_id_insn <= NOP; // Insert addi x0, x0, 0 to flush
+		end else begin // else if (if_id_write) begin
+			if_id_pc   <= f_pc;
+			if_id_insn <= f_insn;
+		end
+	end
 
 	// ---------------------------------------------------------
 	// Decode Stage
@@ -110,11 +168,11 @@ end
 	decode #(
 		.DWIDTH(DWIDTH),
 		.AWIDTH(AWIDTH)
-	) decode1 (
+	) idecode (
 		.clk (clk),
 		.rst (reset),
-		.insn_i (if_id_insn),
 		.pc_i (if_id_pc),
+		.insn_i (if_id_insn),
 
 		.pc_o (d_pc),
 		.insn_o (d_insn),
@@ -128,7 +186,7 @@ end
 		.imm_o ()
 	);
 
-		// ---------------------------------------------------------
+	// ---------------------------------------------------------
 	// Immediate Generator
 	// ---------------------------------------------------------
 	// Generates the 32-bit immediate value based on the type
@@ -137,14 +195,13 @@ end
 	
 	logic [DWIDTH-1:0] d_imm;
 
-	igen #(.DWIDTH(DWIDTH)) igen1 (
+	igen #(.DWIDTH(DWIDTH)) imm_gen (
 		.opcode_i (d_opcode),
 		.insn_i (d_insn),
 
 		.imm_o (d_imm)
 	);
 
-	
 	// ---------------------------------------------------------
 	// Control Path
 	// ---------------------------------------------------------
@@ -153,31 +210,31 @@ end
 	// register file writes, ALU operation, and memory access 
 	// based on instruction type.
 
-	logic pcsel_out;
-	logic immsel_out;
-	logic regwren_out;
-	logic rs1sel_out;
-	logic rs2sel_out;
-	logic memren_out;
-	logic memwren_out;
-	logic [1:0] wbsel_out;
-	logic [3:0] alusel_out;
+	logic pcsel_o;
+	logic immsel_o;
+	logic regwren_o;
+	logic rs1sel_o;
+	logic rs2sel_o;
+	logic memren_o;
+	logic memwren_o;
+	logic [1:0] wbsel_o;
+	logic [3:0] alusel_o;
 
-	control #(.DWIDTH(DWIDTH)) control1 (
+	control #(.DWIDTH(DWIDTH)) ctrl (
 		.insn_i (d_insn),
 		.opcode_i (d_opcode),
 		.funct7_i (d_funct7),
 		.funct3_i (d_funct3),
 
-		.pcsel_o (pcsel_out),
-		.immsel_o (immsel_out),
-		.regwren_o (regwren_out),
-		.rs1sel_o (rs1sel_out),
-		.rs2sel_o (rs2sel_out),
-		.memren_o (memren_out),
-		.memwren_o (memwren_out),
-		.wbsel_o (wbsel_out),
-		.alusel_o (alusel_out)
+		.pcsel_o (pcsel_o),
+		.immsel_o (immsel_o),
+		.regwren_o (regwren_o),
+		.rs1sel_o (rs1sel_o),
+		.rs2sel_o (rs2sel_o),
+		.memren_o (memren_o),
+		.memwren_o (memwren_o),
+		.wbsel_o (wbsel_o),
+		.alusel_o (alusel_o)
 	);
 
 	// ---------------------------------------------------------
@@ -192,63 +249,124 @@ end
 	logic [DWIDTH-1:0] r_read_rs1_data;
 	logic [DWIDTH-1:0] r_read_rs2_data;
 
-	register_file #(.DWIDTH(DWIDTH)) e_register_file (
+	register_file #(.DWIDTH(DWIDTH)) rf (
 		.clk(clk),
 		.rst(reset),
 		.rs1_i (r_read_rs1),
 		.rs2_i (r_read_rs2),
-		.rd_i (r_write_destination),
+		.rd_i (mem_wb_rd),
 		.datawb_i (r_write_data),
-		.regwren_i (r_write_enable),
+		.regwren_i (mem_wb_regwren), // Register file is written to in writeback stage
 
 		.rs1data_o (r_read_rs1_data),
 		.rs2data_o (r_read_rs2_data)
 	);
 
+	// Probe assignments
 	assign r_read_rs1 = d_rs1;
 	assign r_read_rs2 = d_rs2;
     assign r_write_destination = d_rd;
     assign r_write_enable = regwren_out;
 
-	logic [31:0] id_ex_pc;
-logic [31:0] id_ex_rs1_data;
-logic [31:0] id_ex_rs2_data;
-logic [31:0] id_ex_imm;
-logic [4:0]  id_ex_rs1;
-logic [4:0]  id_ex_rs2;
-logic [4:0]  id_ex_rd;
+	// ---------------------------------------------------------
+	// Branch Control Signals
+	// ---------------------------------------------------------
 
-logic id_ex_memren;
-logic id_ex_regwren;
-logic [3:0] id_ex_alusel;
+	logic br_taken, breq_o, brlt_o;
 
-// ID/EX pipeline register
+	branch_control #(.DWIDTH(DWIDTH)) branch_ctrl (
+		.opcode_i (d_opcode),
+		.funct3_i (d_funct3),
+		.rs1_i (r_read_rs1_data),
+		.rs2_i (r_read_rs2_data),
 
-always_ff @(posedge clk or posedge reset) begin
-    if (reset || id_ex_flush) begin
-        id_ex_memren  <= 1'b0;
-        id_ex_regwren <= 1'b0;
-        id_ex_alusel  <= 4'b0;
-        id_ex_rd      <= 5'b0;
-    end else begin
-        id_ex_pc        <= if_id_pc;
-        id_ex_rs1_data  <= r_read_rs1_data;
-        id_ex_rs2_data  <= r_read_rs2_data;
-        id_ex_imm       <= d_imm;
-        id_ex_rs1       <= d_rs1;
-        id_ex_rs2       <= d_rs2;
-        id_ex_rd        <= d_rd;
+		.breq_o (breq_o),
+		.brlt_o (brlt_o)
+	);
 
-        id_ex_memren    <= memren_out;
-        id_ex_regwren   <= regwren_out;
-        id_ex_alusel    <= alusel_out;
-    end
-end
+	always_comb begin : branch_taken_logic
+		br_taken = 0;
+		if (d_opcode == BTYPE_OPCODE) begin
+			unique case (d_funct3)
+				BEQ_FUNCT3: br_taken = breq_o;
+				BNE_FUNCT3: br_taken = ~breq_o;
+				
+				BLT_FUNCT3,
+				BLTU_FUNCT3: br_taken = brlt_o;
+				
+				BGE_FUNCT3,
+				BGEU_FUNCT3: br_taken = ~brlt_o;
+				
+				default: br_taken = 0;
+			endcase
+		end
+	end
 
-	logic e_br_taken;
+	// ID/EX pipeline register logic
+	always_ff @(posedge clk or posedge reset) begin : id_ex_pipeline_reg
+		if (reset) begin // || id_ex_flush) begin
+			id_ex_pc <= 32'b0;
+
+			id_ex_opcode <= 7'b0;
+			id_ex_rd <= 5'b0;
+			id_ex_rs1 <= 5'b0;
+			id_ex_rs2 <= 5'b0;
+			id_ex_funct3 <= 3'b0;
+			id_ex_funct7 <= 7'b0;
+			id_ex_imm <= 32'b0;
+
+			id_ex_rs1_data <= 32'b0;
+			id_ex_rs2_data <= 32'b0;
+
+			id_ex_br_taken <= 1'b0;
+		end else begin
+			id_ex_pc <= if_id_pc;
+
+			id_ex_opcode <= d_opcode;
+			id_ex_rd <= d_rd;
+			id_ex_rs1 <= d_rs1;
+			id_ex_rs2 <= d_rs2;
+			id_ex_funct3 <= d_funct3;
+			id_ex_funct7 <= d_funct7;
+			id_ex_imm <= d_imm;
+
+			id_ex_rs1_data <= r_read_rs1_data;
+			id_ex_rs2_data <= r_read_rs2_data;
+
+			id_ex_br_taken <= br_taken;
+		end
+	end
+
+	always_ff @(posedge clk or posedge reset) begin : id_ex_control_pipeline_reg
+		if (reset) begin
+			id_ex_pcsel <= 1'b0;
+			id_ex_immsel <= 1'b0;
+			id_ex_regwren <= 1'b0;
+			id_ex_rs1sel <= 1'b0;
+			id_ex_rs2sel <= 1'b0;
+			id_ex_memren <= 1'b0;
+			id_ex_memwren <= 1'b0;
+			id_ex_wbsel <= 2'b0;
+			id_ex_alusel <= 4'b0;
+		end else begin
+			id_ex_pcsel <= pcsel_o;
+			id_ex_immsel <= immsel_o;
+			id_ex_regwren <= regwren_o;
+			id_ex_rs1sel <= rs1sel_o;
+			id_ex_rs2sel <= rs2sel_o;
+			id_ex_memren <= memren_o;
+			id_ex_memwren <= memwren_o;
+			id_ex_wbsel <= wbsel_o;
+			id_ex_alusel <= alusel_o;
+		end
+	end
+
+	// ---------------------------------------------------------
+	// Execute Stage
+	// ---------------------------------------------------------
+
 	logic [AWIDTH-1:0] e_pc;
 	logic [DWIDTH-1:0] e_op1, e_op2, e_alu_res;
-
 
 	alu #(
 		.DWIDTH(DWIDTH), 
@@ -257,28 +375,143 @@ end
 		.pc_i (id_ex_pc),
 		.rs1_i (e_op1),
 		.rs2_i (e_op2),
-		.opcode_i (d_opcode),
-		.funct3_i (d_funct3),
-		.funct7_i (d_funct7),
+		.opcode_i (id_ex_opcode),
+		.funct3_i (id_ex_funct3),
+		.funct7_i (id_ex_funct7),
 		.alusel_i (id_ex_alusel),
 
 		.res_o (e_alu_res),
 		.brtaken_o () // produced by branch_taken_logic
 	);
 	
+	assign e_pc = id_ex_pc;
+	assign e_op1 = id_ex_rs1sel ? id_ex_pc : id_ex_rs1_data;
+	assign e_op2 = id_ex_immsel ? id_ex_imm : id_ex_rs2_data;
 
-	assign e_op1 = rs1sel_out ? id_ex_pc : id_ex_rs1_data;
-assign e_op2 = immsel_out ? id_ex_imm : id_ex_rs2_data;
+	assign f_pcsel_i = id_ex_br_taken | id_ex_pcsel;
+	assign f_target_pc = e_alu_res;
 
+	// EX/MEM pipeline register logic
+	always_ff @(posedge clk or posedge reset) begin : ex_mem_pipeline_reg
+		if (reset) begin
+			ex_mem_pc <= 32'b0;
+			ex_mem_rs2_data <= 32'b0;
+			ex_mem_opcode <= 7'b0;
+			ex_mem_rd <= 5'b0;
+			ex_mem_funct3 <= 3'b0;
 
+			ex_mem_alu_res <= 32'b0;
+		end else begin
+			ex_mem_pc <= id_ex_pc;
+			ex_mem_rs2_data <= id_ex_rs2_data;
+			ex_mem_opcode <= id_ex_opcode;
+			ex_mem_rd <= id_ex_rd;
+			ex_mem_funct3 <= id_ex_funct3;
 
-	// TODO: Re-create the top-level module from PD4. 
-	// Start by defining the pipeline registers between each stage first,
-	// then instantiate each stage and connect them together.
-	
-	// TODO: After pipelining the design, re-visit the fetch stage implementation
-	// to re-work how the PC is updated from jumps and branches, since that will
-	// no longer be handled in the writeback module.
+			ex_mem_alu_res <= e_alu_res;
+		end
+	end
+
+	always_ff @(posedge clk or posedge reset) begin : ex_mem_control_pipeline_reg
+		if (reset) begin
+			ex_mem_regwren <= 1'b0;
+			ex_mem_memren <= 1'b0;
+			ex_mem_memwren <= 1'b0;
+			ex_mem_wbsel <= 2'b0;
+		end else begin
+			ex_mem_regwren <= id_ex_regwren;
+			ex_mem_memren <= id_ex_memren;
+			ex_mem_memwren <= id_ex_memwren;
+			ex_mem_wbsel <= id_ex_wbsel;
+		end
+	end
+
+	// ---------------------------------------------------------
+	// Memory Stage
+	// ---------------------------------------------------------
+
+	logic [2:0] m_size_encoded;
+	logic [AWIDTH-1:0] m_pc, m_address;
+	logic [DWIDTH-1:0] m_data_o, m_data_i;
+
+    // read_en_i should be set to memren_out, but unfortunately tests
+    // expect memory to be read on every instruction and fail otherwise
+	memory #(
+		.AWIDTH(AWIDTH),
+		.DWIDTH(DWIDTH),
+		.BASE_ADDR(32'h01000000)
+	) dmemory (
+		.clk(clk),
+		.rst(reset),
+		.addr_i(m_address),
+		.data_i(m_data_i),
+		.size_encoded_i((ex_mem_opcode == LOAD_OPCODE || ex_mem_opcode == STYPE_OPCODE) ? ex_mem_funct3 : MEM_WORD),
+		.read_en_i(ex_mem_memren), // was 1'b1
+		.write_en_i(ex_mem_memwren),
+
+		.data_o(m_data_o)
+	);
+
+	// Probe assignments
+	// Since testbenches expect memory reads on every instruction, we must default to reading words
+	// (see size_encoded_i instantiation above)
+	assign m_pc = ex_mem_pc;
+	assign m_size_encoded = ex_mem_funct3[1:0];
+	assign m_address = ex_mem_alu_res;
+	assign m_data_i = ex_mem_rs2_data;
+
+	// MEM/WB pipeline register logic
+	always_ff @(posedge clk or posedge reset) begin : mem_wb_pipeline_reg
+		if (reset) begin
+			mem_wb_pc <= 32'b0;
+			mem_wb_alu_res <= 32'b0;
+			mem_wb_rd <= 5'b0;
+
+			mem_wb_mem_data <= 32'b0;
+		end else begin
+			mem_wb_pc <= ex_mem_pc;
+			mem_wb_alu_res <= ex_mem_alu_res;
+			mem_wb_rd <= ex_mem_rd;
+
+			mem_wb_mem_data <= m_data_o;
+		end
+	end
+
+	always_ff @(posedge clk or posedge reset) begin : mem_wb_control_pipeline_reg
+		if (reset) begin
+			mem_wb_regwren <= 1'b0;
+			mem_wb_wbsel <= 2'b0;
+		end else begin
+			mem_wb_regwren <= ex_mem_regwren;
+			mem_wb_wbsel <= ex_mem_wbsel;
+		end
+	end
+
+	// ---------------------------------------------------------
+	// Write-back Stage
+	// ---------------------------------------------------------
+
+	logic w_enable;
+	logic [4:0] w_destination;
+	logic [DWIDTH-1:0] w_data;
+	logic [AWIDTH-1:0] w_pc;
+
+	writeback #(
+		.DWIDTH(DWIDTH), 
+		.AWIDTH(AWIDTH)
+	) wb (
+		.pc_i (mem_wb_pc),
+		.alu_res_i (mem_wb_alu_res),
+		.memory_data_i (mem_wb_mem_data),
+		.wbsel_i (mem_wb_wbsel),
+
+		.writeback_data_o (w_data),
+	);
+
+	assign w_pc = mem_wb_pc;
+	assign w_enable = mem_wb_regwren;
+	assign w_destination = mem_wb_rd;
+	assign r_write_data = w_data; // not entirely sure if this should be combinational
 
 	// TODO: Order of tasks to complete to achieve a working multi-cycle pipelined design:
 	// 1) Pipeline first, and ensure the design works without dependencies (i.e., ensure
@@ -294,17 +527,12 @@ assign e_op2 = immsel_out ? id_ex_imm : id_ex_rs2_data;
 	// 7) Implement pipeline squashing
 	// 8) Create testbenches with control hazards to verify squashing correctness
 
-	// TODO: Remember to update probes.svh with the new probe names, since the names of
-	// the probes will likely change during this PD.
-
 	// program termination logic
 	reg is_program = 0;
 	always_ff @(posedge clk) begin
-		// TODO: Termination code pulled directly from PD4, remember to change named registers
-		// after pipelining the design, if they were renamed
-		if (f_insn == 32'h00000073) $finish;  // directly terminate if see ecall
-		if (f_insn == 32'h00008067) is_program = 1;  // if see ret instruction, it is simple program test
-		if (is_program && (e_register_file.regfile[2] == 32'h01000000 + `MEM_DEPTH)) $finish;
+		if (if_id_insn == 32'h00000073) $finish;  // directly terminate if see ecall
+		if (if_id_insn == 32'h00008067) is_program = 1;  // if see ret instruction, it is simple program test
+		if (is_program && (rf.regfile[2] == 32'h01000000 + `MEM_DEPTH)) $finish;
 	end
 
 endmodule : pd5

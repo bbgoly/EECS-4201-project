@@ -25,7 +25,7 @@ module writeback #(
 	input logic [DWIDTH-1:0] alu_res_i,
 	input logic [DWIDTH-1:0] memory_data_i,
 	input logic [1:0] wbsel_i,
-	// input logic brtaken_i,
+	// input logic brtaken_i, // taken branches handled in top-level module
 	
 	output logic [DWIDTH-1:0] writeback_data_o
 );

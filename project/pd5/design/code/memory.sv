@@ -35,13 +35,16 @@ module memory #(
 
 	output logic [DWIDTH-1:0] data_o
 );
+	// TODO: Consider cleaning up memory wrapping to reduce duplicated
+	// masking logic in read and write sections.
 
-	localparam int MEM_BYTES = `MEM_DEPTH;
+	localparam int MEM_BYTES = `MEM_DEPTH; // Total memory size in bytes
 
     // Byte-addressable memory
 	logic [DWIDTH-1:0] temp_memory [0:`LINE_COUNT - 1];
 	logic [7:0] main_memory [0:MEM_BYTES - 1];
 	
+	// Compute effective address within memory bounds
     logic unsigned [AWIDTH-1:0] address;
 	assign address = addr_i >= BASE_ADDR 
 		? (addr_i - BASE_ADDR) % MEM_BYTES
