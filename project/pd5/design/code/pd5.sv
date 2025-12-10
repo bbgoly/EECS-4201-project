@@ -138,7 +138,7 @@ module pd5 #(
 	always_ff @(posedge clk or posedge reset) begin : if_id_pipeline_reg
 		if (reset) begin
 			if_id_pc   <= 32'b0;
-			if_id_insn <= NOP;
+			if_id_insn <= 32'b0;
 		// end else if (f_pcsel_i) begin
 		// 	if_id_pc   <= 32'b0;
 		// 	if_id_insn <= NOP; // Insert addi x0, x0, 0 to flush
@@ -266,7 +266,7 @@ module pd5 #(
 	assign r_read_rs1 = d_rs1;
 	assign r_read_rs2 = d_rs2;
     assign r_write_destination = d_rd;
-    assign r_write_enable = regwren_out;
+    assign r_write_enable = regwren_o;
 
 	// ---------------------------------------------------------
 	// Branch Control Signals
@@ -505,7 +505,7 @@ module pd5 #(
 		.memory_data_i (mem_wb_mem_data),
 		.wbsel_i (mem_wb_wbsel),
 
-		.writeback_data_o (w_data),
+		.writeback_data_o (w_data)
 	);
 
 	assign w_pc = mem_wb_pc;
