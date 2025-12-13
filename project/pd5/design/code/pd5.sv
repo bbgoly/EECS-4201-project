@@ -54,9 +54,6 @@ module pd5 #(
 	logic [DWIDTH-1:0] id_ex_rs1_data;
 	logic [DWIDTH-1:0] id_ex_rs2_data;
 
-	// Branch taken signal
-	logic id_ex_br_taken;
-
 	// EX/MEM pipeline registers
 	logic [AWIDTH-1:0] ex_mem_pc;
 	logic [DWIDTH-1:0] ex_mem_rs2_data; // Only rs2 data is needed past EX stage for stores
@@ -268,40 +265,6 @@ module pd5 #(
     assign r_write_destination = d_rd;
     assign r_write_enable = regwren_o;
 
-	// ---------------------------------------------------------
-	// Branch Control Signals
-	// ---------------------------------------------------------
-
-	logic br_taken, breq_o, brlt_o;
-
-	branch_control #(.DWIDTH(DWIDTH)) branch_ctrl (
-		.opcode_i (d_opcode),
-		.funct3_i (d_funct3),
-		.rs1_i (r_read_rs1_data),
-		.rs2_i (r_read_rs2_data),
-
-		.breq_o (breq_o),
-		.brlt_o (brlt_o)
-	);
-
-	always_comb begin : branch_taken_logic
-		br_taken = 0;
-		if (d_opcode == BTYPE_OPCODE) begin
-			unique case (d_funct3)
-				BEQ_FUNCT3: br_taken = breq_o;
-				BNE_FUNCT3: br_taken = ~breq_o;
-				
-				BLT_FUNCT3,
-				BLTU_FUNCT3: br_taken = brlt_o;
-				
-				BGE_FUNCT3,
-				BGEU_FUNCT3: br_taken = ~brlt_o;
-				
-				default: br_taken = 0;
-			endcase
-		end
-	end
-
 	// ID/EX pipeline register logic
 	always_ff @(posedge clk or posedge reset) begin : id_ex_pipeline_reg
 		if (reset) begin // || id_ex_flush) begin
@@ -317,8 +280,6 @@ module pd5 #(
 
 			id_ex_rs1_data <= 32'b0;
 			id_ex_rs2_data <= 32'b0;
-
-			id_ex_br_taken <= 1'b0;
 		end else begin
 			id_ex_pc <= if_id_pc;
 
@@ -332,8 +293,6 @@ module pd5 #(
 
 			id_ex_rs1_data <= r_read_rs1_data;
 			id_ex_rs2_data <= r_read_rs2_data;
-
-			id_ex_br_taken <= br_taken;
 		end
 	end
 
@@ -388,7 +347,47 @@ module pd5 #(
 	assign e_op1 = id_ex_rs1sel ? id_ex_pc : id_ex_rs1_data;
 	assign e_op2 = id_ex_immsel ? id_ex_imm : id_ex_rs2_data;
 
-	assign f_pcsel_i = id_ex_br_taken | id_ex_pcsel;
+	always_comb begin
+		if (id_ex_rs1sel) begin
+
+		end
+	end
+
+	// ---------------------------------------------------------
+	// Branch Control Signals
+	// ---------------------------------------------------------
+
+	logic e_br_taken, breq_o, brlt_o;
+
+	branch_control #(.DWIDTH(DWIDTH)) branch_ctrl (
+		.opcode_i (id_ex_opcode),
+		.funct3_i (id_ex_funct3),
+		.rs1_i (id_ex_rs1_data),
+		.rs2_i (id_ex_rs2_data),
+
+		.breq_o (breq_o),
+		.brlt_o (brlt_o)
+	);
+
+	always_comb begin : branch_taken_logic
+		e_br_taken = 0;
+		if (d_opcode == BTYPE_OPCODE) begin
+			unique case (d_funct3)
+				BEQ_FUNCT3: e_br_taken = breq_o;
+				BNE_FUNCT3: e_br_taken = ~breq_o;
+				
+				BLT_FUNCT3,
+				BLTU_FUNCT3: e_br_taken = brlt_o;
+				
+				BGE_FUNCT3,
+				BGEU_FUNCT3: e_br_taken = ~brlt_o;
+				
+				default: e_br_taken = 0;
+			endcase
+		end
+	end
+
+	assign f_pcsel_i = e_br_taken | id_ex_pcsel;
 	assign f_target_pc = e_alu_res;
 
 	// EX/MEM pipeline register logic

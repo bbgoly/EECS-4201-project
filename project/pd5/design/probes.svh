@@ -22,7 +22,7 @@
 
 `define PROBE_E_PC                e_pc
 `define PROBE_E_ALU_RES           e_alu_res
-`define PROBE_E_BR_TAKEN          br_taken
+`define PROBE_E_BR_TAKEN          e_br_taken
 
 `define PROBE_M_PC                m_pc
 `define PROBE_M_ADDRESS           m_address
