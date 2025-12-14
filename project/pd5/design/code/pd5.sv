@@ -141,12 +141,13 @@ module pd5 #(
 		if (reset) begin
 			if_id_pc   <= 32'b0;
 			if_id_insn <= 32'b0;
-		// end else if (f_pcsel_i) begin
-		// 	if_id_pc   <= 32'b0;
-		// 	if_id_insn <= NOP; // Insert addi x0, x0, 0 to flush
+		end else if (f_pcsel_i) begin
+			// Squash instructions fetched before branch resolved by inserting NOP
+			// if_id_pc   <= 32'b0; // PC is not cleared on branch squash to satisfy tests
+			if_id_insn <= NOP; // NOP implemented as addi x0, x0, 0
 		end else if (!load_use_stall_en) begin
-			// Freeze IF/ID registers on load-use hazard stall, 
-			// otherwise update them with new instruction and PC
+			// Freeze IF/ID registers on load-use hazard stall, otherwise
+			// update them with new instruction and PC
 			if_id_pc   <= f_pc;
 			if_id_insn <= f_insn;
 		end
@@ -296,6 +297,17 @@ module pd5 #(
 
 			id_ex_rs1_data <= 32'b0;
 			id_ex_rs2_data <= 32'b0;
+		end else if (f_pcsel_i) begin
+			// Squash ID/EX due to branch taken
+			id_ex_pc <= if_id_pc;
+
+			id_ex_opcode <= 7'b0;
+			id_ex_rd <= 5'b0;
+			id_ex_rs1 <= 5'b0;
+			id_ex_rs2 <= 5'b0;
+			id_ex_funct3 <= 3'b0;
+			id_ex_funct7 <= 7'b0;
+			id_ex_imm <= 32'b0;
 		end else begin
 			id_ex_pc <= if_id_pc;
 
@@ -313,7 +325,7 @@ module pd5 #(
 	end
 
 	always_ff @(posedge clk or posedge reset) begin : id_ex_control_pipeline_reg
-		if (reset || load_use_stall_en) begin
+		if (reset || load_use_stall_en) begin // || f_pcsel_i might not be needed due to NOP insertion
 			// Flush control signals on load-use hazard stall
 			id_ex_pcsel <= 1'b0;
 			id_ex_immsel <= 1'b0;
@@ -399,7 +411,7 @@ module pd5 #(
 
 	always_comb begin : branch_taken_logic
 		e_br_taken = 0;
-		if (d_opcode == BTYPE_OPCODE) begin
+		if (id_ex_opcode == BTYPE_OPCODE) begin
 			unique case (id_ex_funct3)
 				BEQ_FUNCT3: e_br_taken = breq_o;
 				BNE_FUNCT3: e_br_taken = ~breq_o;
