@@ -57,8 +57,9 @@ module pd5 #(
 	// EX/MEM pipeline registers
 	logic [AWIDTH-1:0] ex_mem_pc;
 	logic [DWIDTH-1:0] ex_mem_rs2_data; // Only rs2 data is needed past EX stage for stores
-	logic [6:0] ex_mem_opcode; // Opcode and funct3 purpose in memory stage described below
+	logic [6:0] ex_mem_opcode; 			// Opcode and funct3 purpose in memory stage described below
 	logic [4:0] ex_mem_rd;
+	logic [4:0] ex_mem_rs2;
 	logic [2:0] ex_mem_funct3;
 
 	// Control signals
@@ -271,7 +272,7 @@ module pd5 #(
 		.rs1_i (r_read_rs1),
 		.rs2_i (r_read_rs2),
 		.rd_i (mem_wb_rd),
-		.datawb_i (r_write_data),
+		.datawb_i (r_write_data),		// Produced by writeback stage (MEM/WB)
 		.regwren_i (mem_wb_regwren),	// Register file is written to in writeback stage
 
 		.rs1data_o (r_read_rs1_data),
@@ -490,6 +491,7 @@ module pd5 #(
 			ex_mem_rs2_data <= 32'b0;
 			ex_mem_opcode <= 7'b0;
 			ex_mem_rd <= 5'b0;
+			ex_mem_rs2 <= 5'b0;
 			ex_mem_funct3 <= 3'b0;
 
 			ex_mem_alu_res <= 32'b0;
@@ -498,6 +500,7 @@ module pd5 #(
 			ex_mem_rs2_data <= id_ex_rs2_data;
 			ex_mem_opcode <= id_ex_opcode;
 			ex_mem_rd <= id_ex_rd;
+			ex_mem_rs2 <= id_ex_rs2;
 			ex_mem_funct3 <= id_ex_funct3;
 
 			ex_mem_alu_res <= e_alu_res;
@@ -548,11 +551,15 @@ module pd5 #(
 		.data_o(m_data_o)
 	);
 
+	// W/M bypassing logic for stores
+	assign m_data_i = mem_wb_rd != 5'b0 && mem_wb_rd == ex_mem_rs2 
+		? w_data
+		: ex_mem_rs2_data;
+
 	// Probe assignments
 	assign m_pc = ex_mem_pc;
-	assign m_size_encoded = ex_mem_funct3[1:0];
 	assign m_address = ex_mem_alu_res;
-	assign m_data_i = ex_mem_rs2_data;
+	assign m_size_encoded = ex_mem_funct3[1:0];
 
 	// MEM/WB pipeline register logic
 	always_ff @(posedge clk or posedge reset) begin : mem_wb_pipeline_reg
@@ -602,7 +609,6 @@ module pd5 #(
 		.writeback_data_o (w_data)
 	);
 
-	// TODO: not entirely sure yet if this should be combinational, needs testing
 	assign r_write_data = w_data; // Register file writeback data signal
 
 	// Probe assignments
