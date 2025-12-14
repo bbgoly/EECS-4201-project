@@ -253,7 +253,7 @@ module pd5 #(
 		.rs2_i (r_read_rs2),
 		.rd_i (mem_wb_rd),
 		.datawb_i (r_write_data),
-		.regwren_i (mem_wb_regwren), // Register file is written to in writeback stage
+		.regwren_i (mem_wb_regwren),	// Register file is written to in writeback stage
 
 		.rs1data_o (r_read_rs1_data),
 		.rs2data_o (r_read_rs2_data)
@@ -324,34 +324,45 @@ module pd5 #(
 	// Execute Stage
 	// ---------------------------------------------------------
 
+	// M/X bypassing logic
+	logic mx_bypass_rs1, mx_bypass_rs2;
+
+	assign mx_bypass_rs1 = ex_mem_rd != 5'b0 && ex_mem_rd == id_ex_rs1;
+	assign mx_bypass_rs2 = ex_mem_rd != 5'b0 && ex_mem_rd == id_ex_rs2;
+
+	// W/X bypassing logic
+	logic wx_bypass_rs1, wx_bypass_rs2;
+
+	assign wx_bypass_rs1 = mem_wb_rd != 5'b0 && mem_wb_rd == id_ex_rs1;
+	assign wx_bypass_rs2 = mem_wb_rd != 5'b0 && mem_wb_rd == id_ex_rs2;
+
+	// ASel and BSel muxing
+	logic [DWIDTH-1:0] e_rs1, e_rs2;
+
+	assign e_rs1 = mx_bypass_rs1 ? ex_mem_alu_res : 
+		wx_bypass_rs1 ? mem_wb_mem_data : id_ex_rs1_data;
+		
+	assign e_rs2 = mx_bypass_rs2 ? ex_mem_alu_res : 
+		wx_bypass_rs2 ? mem_wb_mem_data : id_ex_rs2_data;
+
 	logic [AWIDTH-1:0] e_pc;
-	logic [DWIDTH-1:0] e_op1, e_op2, e_alu_res;
+	logic [DWIDTH-1:0] e_alu_res;
 
 	alu #(
 		.DWIDTH(DWIDTH), 
 		.AWIDTH(AWIDTH)
 	) e_alu (
 		.pc_i (id_ex_pc),
-		.rs1_i (e_op1),
-		.rs2_i (e_op2),
+		.rs1_i (id_ex_rs1sel ? id_ex_pc : e_rs1), 	// ASel mux
+		.rs2_i (id_ex_immsel ? id_ex_imm : e_rs2), 	// BSel mux
 		.opcode_i (id_ex_opcode),
 		.funct3_i (id_ex_funct3),
 		.funct7_i (id_ex_funct7),
 		.alusel_i (id_ex_alusel),
 
 		.res_o (e_alu_res),
-		.brtaken_o () // produced by branch_taken_logic
+		.brtaken_o ()	// produced by branch_taken_logic
 	);
-	
-	assign e_pc = id_ex_pc;
-	assign e_op1 = id_ex_rs1sel ? id_ex_pc : id_ex_rs1_data;
-	assign e_op2 = id_ex_immsel ? id_ex_imm : id_ex_rs2_data;
-
-	always_comb begin
-		if (id_ex_rs1sel) begin
-
-		end
-	end
 
 	// ---------------------------------------------------------
 	// Branch Control Signals
@@ -362,8 +373,8 @@ module pd5 #(
 	branch_control #(.DWIDTH(DWIDTH)) branch_ctrl (
 		.opcode_i (id_ex_opcode),
 		.funct3_i (id_ex_funct3),
-		.rs1_i (id_ex_rs1_data),
-		.rs2_i (id_ex_rs2_data),
+		.rs1_i (e_rs1),
+		.rs2_i (e_rs2),
 
 		.breq_o (breq_o),
 		.brlt_o (brlt_o)
@@ -372,7 +383,7 @@ module pd5 #(
 	always_comb begin : branch_taken_logic
 		e_br_taken = 0;
 		if (d_opcode == BTYPE_OPCODE) begin
-			unique case (d_funct3)
+			unique case (id_ex_funct3)
 				BEQ_FUNCT3: e_br_taken = breq_o;
 				BNE_FUNCT3: e_br_taken = ~breq_o;
 				
@@ -387,8 +398,13 @@ module pd5 #(
 		end
 	end
 
+	// PCSel logic for fetch stage mux, updates PC on next cycle
+	// with computed target address if branch taken
 	assign f_pcsel_i = e_br_taken | id_ex_pcsel;
 	assign f_target_pc = e_alu_res;
+
+	// Probe assignments
+	assign e_pc = id_ex_pc;
 
 	// EX/MEM pipeline register logic
 	always_ff @(posedge clk or posedge reset) begin : ex_mem_pipeline_reg
@@ -433,8 +449,12 @@ module pd5 #(
 	logic [AWIDTH-1:0] m_pc, m_address;
 	logic [DWIDTH-1:0] m_data_o, m_data_i;
 
-    // read_en_i should be set to memren_out, but unfortunately tests
-    // expect memory to be read on every instruction and fail otherwise
+    // read_en_i should be set to ex_mem_memren, but unfortunately tests
+    // expect memory to be read on every instruction (not just load/stores)
+	// and fail otherwise. Therefore, we set read_en_i to be always enabled.
+	//
+	// Additionally, since testbenches expect memory reads on every instruction, 
+	// we must default to reading words (see size_encoded_i instantiation below)
 	memory #(
 		.AWIDTH(AWIDTH),
 		.DWIDTH(DWIDTH),
@@ -452,8 +472,6 @@ module pd5 #(
 	);
 
 	// Probe assignments
-	// Since testbenches expect memory reads on every instruction, we must default to reading words
-	// (see size_encoded_i instantiation above)
 	assign m_pc = ex_mem_pc;
 	assign m_size_encoded = ex_mem_funct3[1:0];
 	assign m_address = ex_mem_alu_res;
@@ -507,10 +525,13 @@ module pd5 #(
 		.writeback_data_o (w_data)
 	);
 
+	// TODO: not entirely sure yet if this should be combinational, needs testing
+	assign r_write_data = w_data; // Register file writeback data signal
+
+	// Probe assignments
 	assign w_pc = mem_wb_pc;
 	assign w_enable = mem_wb_regwren;
 	assign w_destination = mem_wb_rd;
-	assign r_write_data = w_data; // not entirely sure if this should be combinational
 
 	// TODO: Order of tasks to complete to achieve a working multi-cycle pipelined design:
 	// 1) Pipeline first, and ensure the design works without dependencies (i.e., ensure
