@@ -132,6 +132,9 @@ module pd5 #(
 		.data_o(f_insn)
 	);
 
+	// Load-use stall enable signal
+	logic load_use_stall_en;
+	
 	// IF/ID pipeline register logic
 	always_ff @(posedge clk or posedge reset) begin : if_id_pipeline_reg
 		if (reset) begin
@@ -140,11 +143,9 @@ module pd5 #(
 		// end else if (f_pcsel_i) begin
 		// 	if_id_pc   <= 32'b0;
 		// 	if_id_insn <= NOP; // Insert addi x0, x0, 0 to flush
-		// end else begin // else if (if_id_write) begin
-			//if_id_pc   <= f_pc;
-			//if_id_insn <= f_insn;
-		// end
-		end else if (!stall) begin
+		end else if (!load_use_stall_en) begin
+			// Freeze IF/ID registers on load-use hazard stall, 
+			// otherwise update them with new instruction and PC
 			if_id_pc   <= f_pc;
 			if_id_insn <= f_insn;
 		end
@@ -239,21 +240,13 @@ module pd5 #(
 		.alusel_o (alusel_o)
 	);
 
-
-	// ---------------------------------------------------------
-	// Stall logic for load-use hazard detection
-	// ---------------------------------------------------------
-
-	logic stall;
-
-	assign stall =
-		id_ex_memren &&
-		(id_ex_rd != 5'b0) &&
-		(
-			(id_ex_rd == d_rs1) ||
-			(id_ex_rd == d_rs2)
+	// Load-use hazard stall logic
+	assign load_use_stall_en = id_ex_memren && 
+		id_ex_rd != 5'b0 && (
+			id_ex_rd == d_rs1 ||
+			(id_ex_rd == d_rs2 && !memwren_o)
 		);
-
+		
 	// ---------------------------------------------------------
 	// Register File
 	// ---------------------------------------------------------
@@ -287,7 +280,8 @@ module pd5 #(
 
 	// ID/EX pipeline register logic
 	always_ff @(posedge clk or posedge reset) begin : id_ex_pipeline_reg
-		if (reset || stall) begin
+		if (reset || load_use_stall_en) begin
+			// Insert bubble into ID/EX on load-use hazard stall
 			id_ex_pc <= 32'b0;
 
 			id_ex_opcode <= 7'b0;
@@ -300,8 +294,6 @@ module pd5 #(
 
 			id_ex_rs1_data <= 32'b0;
 			id_ex_rs2_data <= 32'b0;
-
-			id_ex_br_taken <= 1'b0;
 		end else begin
 			id_ex_pc <= if_id_pc;
 
@@ -315,13 +307,12 @@ module pd5 #(
 
 			id_ex_rs1_data <= r_read_rs1_data;
 			id_ex_rs2_data <= r_read_rs2_data;
-
-			id_ex_br_taken <= br_taken;
 		end
 	end
 
 	always_ff @(posedge clk or posedge reset) begin : id_ex_control_pipeline_reg
-		if (reset || stall) begin
+		if (reset || load_use_stall_en) begin
+			// Flush control signals on load-use hazard stall
 			id_ex_pcsel <= 1'b0;
 			id_ex_immsel <= 1'b0;
 			id_ex_regwren <= 1'b0;
@@ -343,60 +334,6 @@ module pd5 #(
 			id_ex_alusel <= alusel_o;
 		end
 	end
-
-	// always_ff @(posedge clk or posedge reset) begin : id_ex_pipeline_reg
-	// 	if (reset) begin // || id_ex_flush) begin
-	// 		id_ex_pc <= 32'b0;
-
-	// 		id_ex_opcode <= 7'b0;
-	// 		id_ex_rd <= 5'b0;
-	// 		id_ex_rs1 <= 5'b0;
-	// 		id_ex_rs2 <= 5'b0;
-	// 		id_ex_funct3 <= 3'b0;
-	// 		id_ex_funct7 <= 7'b0;
-	// 		id_ex_imm <= 32'b0;
-
-	// 		id_ex_rs1_data <= 32'b0;
-	// 		id_ex_rs2_data <= 32'b0;
-	// 	end else begin
-	// 		id_ex_pc <= if_id_pc;
-
-	// 		id_ex_opcode <= d_opcode;
-	// 		id_ex_rd <= d_rd;
-	// 		id_ex_rs1 <= d_rs1;
-	// 		id_ex_rs2 <= d_rs2;
-	// 		id_ex_funct3 <= d_funct3;
-	// 		id_ex_funct7 <= d_funct7;
-	// 		id_ex_imm <= d_imm;
-
-	// 		id_ex_rs1_data <= r_read_rs1_data;
-	// 		id_ex_rs2_data <= r_read_rs2_data;
-	// 	end
-	// end
-
-	// always_ff @(posedge clk or posedge reset) begin : id_ex_control_pipeline_reg
-	// 	if (reset) begin
-	// 		id_ex_pcsel <= 1'b0;
-	// 		id_ex_immsel <= 1'b0;
-	// 		id_ex_regwren <= 1'b0;
-	// 		id_ex_rs1sel <= 1'b0;
-	// 		id_ex_rs2sel <= 1'b0;
-	// 		id_ex_memren <= 1'b0;
-	// 		id_ex_memwren <= 1'b0;
-	// 		id_ex_wbsel <= 2'b0;
-	// 		id_ex_alusel <= 4'b0;
-	// 	end else begin
-	// 		id_ex_pcsel <= pcsel_o;
-	// 		id_ex_immsel <= immsel_o;
-	// 		id_ex_regwren <= regwren_o;
-	// 		id_ex_rs1sel <= rs1sel_o;
-	// 		id_ex_rs2sel <= rs2sel_o;
-	// 		id_ex_memren <= memren_o;
-	// 		id_ex_memwren <= memwren_o;
-	// 		id_ex_wbsel <= wbsel_o;
-	// 		id_ex_alusel <= alusel_o;
-	// 	end
-	// end
 
 	// ---------------------------------------------------------
 	// Execute Stage
