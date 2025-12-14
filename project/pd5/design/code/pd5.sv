@@ -504,7 +504,7 @@ module pd5 #(
 
 	// W/M bypassing logic for stores
 	assign m_data_i = mem_wb_rd != 5'b0 && mem_wb_rd == ex_mem_rs2 
-		? w_data
+		? r_write_data
 		: ex_mem_rs2_data;
 
 	// Probe assignments

@@ -27,7 +27,7 @@
 `define PROBE_M_PC                m_pc
 `define PROBE_M_ADDRESS           m_address
 `define PROBE_M_SIZE_ENCODED      m_size_encoded
-`define PROBE_M_DATA              m_data_o
+`define PROBE_M_DATA              m_data_i
 
 `define PROBE_W_PC                w_pc
 `define PROBE_W_ENABLE            w_enable
