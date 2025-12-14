@@ -340,10 +340,10 @@ module pd5 #(
 	logic [DWIDTH-1:0] e_rs1, e_rs2;
 
 	assign e_rs1 = mx_bypass_rs1 ? ex_mem_alu_res : 
-		wx_bypass_rs1 ? mem_wb_mem_data : id_ex_rs1_data;
+		wx_bypass_rs1 ? r_write_data : id_ex_rs1_data;
 		
 	assign e_rs2 = mx_bypass_rs2 ? ex_mem_alu_res : 
-		wx_bypass_rs2 ? mem_wb_mem_data : id_ex_rs2_data;
+		wx_bypass_rs2 ? r_write_data : id_ex_rs2_data;
 
 	logic [AWIDTH-1:0] e_pc;
 	logic [DWIDTH-1:0] e_alu_res;
