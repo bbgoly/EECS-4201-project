@@ -23,6 +23,7 @@ module fetch #(
 	input logic rst,
 	input logic pcsel_i,
 	input logic [AWIDTH-1:0] target_pc_i,
+	input logic stall_en_i,
 	
 	output logic [AWIDTH-1:0] pc_o,
 	output logic [DWIDTH-1:0] insn_o
@@ -35,11 +36,12 @@ module fetch #(
             pc <= BASEADDR;
         end else if (pcsel_i) begin
 			pc <= target_pc_i;
-		end else begin
+		end else if (!stall_en_i) begin
+			// Only increment PC when not stalled, otherwise freeze PC
             pc <= pc + 32'd4;
         end
     end
-       
+
 	assign pc_o = pc;
 
 endmodule : fetch

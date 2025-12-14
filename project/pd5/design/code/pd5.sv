@@ -90,6 +90,9 @@ module pd5 #(
 	// PC is set to BASEADDR. On each clock edge, PC either increments
 	// by 4 or jumps to a target PC to fetch the next instruction.
 
+	// Load-use stall enable signal
+	logic load_use_stall_en;
+
 	logic f_pcsel_i; // produced by branch logic and control path
 	logic [AWIDTH-1:0] f_pc;
 	logic [AWIDTH-1:0] f_target_pc;
@@ -103,6 +106,7 @@ module pd5 #(
 		.rst(reset),
 		.pcsel_i(f_pcsel_i),
 		.target_pc_i(f_target_pc),
+		.stall_en_i(load_use_stall_en),
 		
 		.pc_o(f_pc),
 		.insn_o()
@@ -131,9 +135,6 @@ module pd5 #(
 
 		.data_o(f_insn)
 	);
-
-	// Load-use stall enable signal
-	logic load_use_stall_en;
 	
 	// IF/ID pipeline register logic
 	always_ff @(posedge clk or posedge reset) begin : if_id_pipeline_reg
@@ -241,10 +242,11 @@ module pd5 #(
 	);
 
 	// Load-use hazard stall logic
+	// rd must equal rs1 or rs2, so rd != x0 is equivalent to rs1/rs2 != x0
 	assign load_use_stall_en = id_ex_memren && 
 		id_ex_rd != 5'b0 && (
 			id_ex_rd == d_rs1 ||
-			(id_ex_rd == d_rs2 && !memwren_o)
+			(id_ex_rd == d_rs2 && !memwren_o) // do not stall store instructions (can use W/M bypass)
 		);
 		
 	// ---------------------------------------------------------
