@@ -151,7 +151,7 @@ module pd5 #(
 	// 	if (reset) begin
 	// 		if_id_pc   <= 32'b0;
 	// 		if_id_insn <= 32'b0;
-	// 	end else if (f_pcsel_i && !wd_stall_en) begin
+	// 	end else if (f_pcsel_i) begin
 	// 		// Squash instructions fetched before branch resolved by inserting NOP
 	// 		// if_id_pc   <= 32'b0; // PC is not cleared on branch squash to satisfy tests
 	// 		if_id_insn <= NOP; // NOP implemented as addi x0, x0, 0
@@ -163,48 +163,26 @@ module pd5 #(
 	// 	end
 	// end
 
-
-	always_ff @(posedge clk or posedge reset) begin : if_id_pipeline_reg
-    if (reset) begin
-        if_id_pc   <= 32'b0;
-        if_id_insn <= 32'b0;
-
-    end else if (stall_en) begin
-        // FREEZE on stall (load-use or WD)
-        if_id_pc   <= if_id_pc;
-        if_id_insn <= if_id_insn;
-
-    end else if (f_pcsel_i) begin
-        // Branch / jump squash
-        if_id_insn <= NOP;
-
-    end else begin
-        // Normal advance
-        if_id_pc   <= f_pc;
-        if_id_insn <= f_insn;
-    end
-end
-
-
+	
 	// IF/ID pipeline register logic
-	// always_ff @(posedge clk or posedge reset) begin : if_id_pipeline_reg
-	// 	if (reset) begin
-	// 		if_id_pc   <= 32'b0;
-	// 		if_id_insn <= 32'b0;
-	// 	end else if (stall_en) begin
-	// 		// Freeze IF/ID registers on load-use hazard or WD stall, 
-	// 		if_id_pc   <= if_id_pc;
-	// 		if_id_insn <= if_id_insn;
-	// 	end else if (f_pcsel_i) begin
-	// 		// Squash instructions fetched before branch resolved by inserting NOP
-	// 		// if_id_pc   <= 32'b0; // PC is not cleared on branch squash to satisfy tests
-	// 		if_id_insn <= NOP; // NOP implemented as addi x0, x0, 0
-	// 	end else begin
-	// 		// Update IF/ID registers with new instruction and PC
-	// 		if_id_pc   <= f_pc;
-	// 		if_id_insn <= f_insn;
-	// 	end
-	// end
+	always_ff @(posedge clk or posedge reset) begin : if_id_pipeline_reg
+		if (reset) begin
+			if_id_pc   <= 32'b0;
+			if_id_insn <= 32'b0;
+		end else if (stall_en) begin
+			// Freeze IF/ID registers on load-use hazard or WD stall
+			if_id_pc   <= if_id_pc;
+			if_id_insn <= if_id_insn;
+		end else if (f_pcsel_i) begin
+			// Squash instructions fetched before branch resolved by inserting NOP
+			// if_id_pc   <= 32'b0; // PC is not cleared on branch squash to satisfy tests
+			if_id_insn <= NOP; // NOP implemented as addi x0, x0, 0
+		end else begin
+			// Update IF/ID registers with new instruction and PC
+			if_id_pc   <= f_pc;
+			if_id_insn <= f_insn;
+		end
+	end
 
 	// ---------------------------------------------------------
 	// Decode Stage
