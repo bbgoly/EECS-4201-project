@@ -87,6 +87,9 @@ module pd5 #(
 	// Stall Hazard Detection Signals
 	// ---------------------------------------------------------
 
+	// Stall enable signal, produced in ID stage
+	logic stall_en;
+
 	// Write-decode hazard stall enable signal
 	logic wd_stall_en;
 
@@ -99,9 +102,6 @@ module pd5 #(
 	// Responsible for maintaining the program counter. On reset,
 	// PC is set to BASEADDR. On each clock edge, PC either increments
 	// by 4 or jumps to a target PC to fetch the next instruction.
-
-	// Stall enable signal, produced in ID stage
-	logic stall_en;
 
 	logic f_pcsel_i; // produced by branch logic and control path
 	logic [AWIDTH-1:0] f_pc;
@@ -147,38 +147,17 @@ module pd5 #(
 	);
 	
 	// IF/ID pipeline register logic
-	// always_ff @(posedge clk or posedge reset) begin : if_id_pipeline_reg
-	// 	if (reset) begin
-	// 		if_id_pc   <= 32'b0;
-	// 		if_id_insn <= 32'b0;
-	// 	end else if (f_pcsel_i) begin
-	// 		// Squash instructions fetched before branch resolved by inserting NOP
-	// 		// if_id_pc   <= 32'b0; // PC is not cleared on branch squash to satisfy tests
-	// 		if_id_insn <= NOP; // NOP implemented as addi x0, x0, 0
-	// 	end else if (!stall_en) begin
-	// 		// Freeze IF/ID registers on load-use hazard or WD stall, 
-	// 		// otherwise update them with new instruction and PC
-	// 		if_id_pc   <= f_pc;
-	// 		if_id_insn <= f_insn;
-	// 	end
-	// end
-
-	
-	// IF/ID pipeline register logic
 	always_ff @(posedge clk or posedge reset) begin : if_id_pipeline_reg
 		if (reset) begin
 			if_id_pc   <= 32'b0;
 			if_id_insn <= 32'b0;
-		end else if (stall_en) begin
-			// Freeze IF/ID registers on load-use hazard or WD stall
-			if_id_pc   <= if_id_pc;
-			if_id_insn <= if_id_insn;
 		end else if (f_pcsel_i) begin
 			// Squash instructions fetched before branch resolved by inserting NOP
 			// if_id_pc   <= 32'b0; // PC is not cleared on branch squash to satisfy tests
 			if_id_insn <= NOP; // NOP implemented as addi x0, x0, 0
-		end else begin
-			// Update IF/ID registers with new instruction and PC
+		end else if (!stall_en) begin
+			// Freeze IF/ID registers on load-use hazard or WD stall, 
+			// otherwise update them with new instruction and PC
 			if_id_pc   <= f_pc;
 			if_id_insn <= f_insn;
 		end
@@ -613,20 +592,6 @@ module pd5 #(
 	assign w_pc = mem_wb_pc;
 	assign w_enable = mem_wb_regwren;
 	assign w_destination = mem_wb_rd;
-
-	// TODO: Order of tasks to complete to achieve a working multi-cycle pipelined design:
-	// 1) Pipeline first, and ensure the design works without dependencies (i.e., ensure
-	//	  all instructions still work in a pipeline)
-	// 2) Create testbenches with no data hazards to verify pipeline correctness
-	// 3) Implement stalling, which should probably be determined during decode stage
-	//	  and could be implemented in the top-level module
-	// 4) Create testbenches with data hazards such as load-use/arithmetic stalls to
-	//	  verify stalling correctness
-	// 5) Implement data forwarding, probably as muxes in the top-level module
-	// 6) Create testbenches with data hazards that can be resolved via forwarding
-	//	  to verify forwarding correctness
-	// 7) Implement pipeline squashing
-	// 8) Create testbenches with control hazards to verify squashing correctness
 
 	// program termination logic
 	reg is_program = 0;
