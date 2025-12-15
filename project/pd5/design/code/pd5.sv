@@ -84,6 +84,16 @@ module pd5 #(
 	logic [DWIDTH-1:0] mem_wb_mem_data;
 
 	// ---------------------------------------------------------
+	// Stall Hazard Detection Signals
+	// ---------------------------------------------------------
+
+	// Write-decode hazard stall enable signal
+	logic wd_stall_en;
+
+	// Load-use hazard stall enable signal
+	logic load_use_stall_en;
+
+	// ---------------------------------------------------------
 	// Fetch Stage
 	// ---------------------------------------------------------
 	// Responsible for maintaining the program counter. On reset,
@@ -141,7 +151,7 @@ module pd5 #(
 		if (reset) begin
 			if_id_pc   <= 32'b0;
 			if_id_insn <= 32'b0;
-		end else if (f_pcsel_i) begin
+		end else if (f_pcsel_i && !wd_stall_en) begin
 			// Squash instructions fetched before branch resolved by inserting NOP
 			// if_id_pc   <= 32'b0; // PC is not cleared on branch squash to satisfy tests
 			if_id_insn <= NOP; // NOP implemented as addi x0, x0, 0
@@ -152,6 +162,26 @@ module pd5 #(
 			if_id_insn <= f_insn;
 		end
 	end
+
+	// IF/ID pipeline register logic
+	// always_ff @(posedge clk or posedge reset) begin : if_id_pipeline_reg
+	// 	if (reset) begin
+	// 		if_id_pc   <= 32'b0;
+	// 		if_id_insn <= 32'b0;
+	// 	end else if (stall_en) begin
+	// 		// Freeze IF/ID registers on load-use hazard or WD stall, 
+	// 		if_id_pc   <= if_id_pc;
+	// 		if_id_insn <= if_id_insn;
+	// 	end else if (f_pcsel_i) begin
+	// 		// Squash instructions fetched before branch resolved by inserting NOP
+	// 		// if_id_pc   <= 32'b0; // PC is not cleared on branch squash to satisfy tests
+	// 		if_id_insn <= NOP; // NOP implemented as addi x0, x0, 0
+	// 	end else begin
+	// 		// Update IF/ID registers with new instruction and PC
+	// 		if_id_pc   <= f_pc;
+	// 		if_id_insn <= f_insn;
+	// 	end
+	// end
 
 	// ---------------------------------------------------------
 	// Decode Stage
@@ -250,18 +280,14 @@ module pd5 #(
 	// rd != x0 && (rd == rs1 || rd == rs2) ⇒ (rs1 != x0) || (rs2 != x0)
 	// Therefore, for both stalls, we only need to check LHS condition
 
-	// WD hazard stall enable signal
-	logic wd_stall_en;
-
+	// Write-decode hazard stall logic
 	assign wd_stall_en = mem_wb_regwren &&
 		mem_wb_rd != 5'b0 && (
-			mem_wb_rd == d_rs1 || 
-			mem_wb_rd == d_rs2
+			(rs1sel_o && mem_wb_rd == d_rs1) || 
+			(rs2sel_o && mem_wb_rd == d_rs2)
 		);
 
-	// Load-use hazard stall enable signal
-	logic load_use_stall_en;
-
+	// Load-use hazard stall logic
 	assign load_use_stall_en = id_ex_memren && 
 		id_ex_rd != 5'b0 && (
 			id_ex_rd == d_rs1 ||
