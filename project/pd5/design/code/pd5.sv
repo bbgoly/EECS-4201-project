@@ -90,8 +90,8 @@ module pd5 #(
 	// PC is set to BASEADDR. On each clock edge, PC either increments
 	// by 4 or jumps to a target PC to fetch the next instruction.
 
-	// Load-use stall enable signal
-	logic load_use_stall_en;
+	// Stall enable signal, produced in ID stage
+	logic stall_en;
 
 	logic f_pcsel_i; // produced by branch logic and control path
 	logic [AWIDTH-1:0] f_pc;
@@ -106,7 +106,7 @@ module pd5 #(
 		.rst(reset),
 		.pcsel_i(f_pcsel_i),
 		.target_pc_i(f_target_pc),
-		.stall_en_i(load_use_stall_en),
+		.stall_en_i(stall_en),
 		
 		.pc_o(f_pc),
 		.insn_o()
@@ -145,9 +145,9 @@ module pd5 #(
 			// Squash instructions fetched before branch resolved by inserting NOP
 			// if_id_pc   <= 32'b0; // PC is not cleared on branch squash to satisfy tests
 			if_id_insn <= NOP; // NOP implemented as addi x0, x0, 0
-		end else if (!load_use_stall_en) begin
-			// Freeze IF/ID registers on load-use hazard stall, otherwise
-			// update them with new instruction and PC
+		end else if (!stall_en) begin
+			// Freeze IF/ID registers on load-use hazard or WD stall, 
+			// otherwise update them with new instruction and PC
 			if_id_pc   <= f_pc;
 			if_id_insn <= f_insn;
 		end
@@ -242,14 +242,34 @@ module pd5 #(
 		.alusel_o (alusel_o)
 	);
 
-	// Load-use hazard stall logic
-	// rd must equal rs1 or rs2, so rd != x0 is equivalent to rs1/rs2 != x0
+	// Stall hazard detection logic
+
+	// For both stalls, rd must equal either rs1 or rs2, so 
+	// checking rd != x0 is equivalent to (rs1 != x0 || rs2 != x0)
+
+	// rd != x0 && (rd == rs1 || rd == rs2) ⇒ (rs1 != x0) || (rs2 != x0)
+	// Therefore, for both stalls, we only need to check LHS condition
+
+	// WD hazard stall enable signal
+	logic wd_stall_en;
+
+	assign wd_stall_en = mem_wb_regwren &&
+		mem_wb_rd != 5'b0 && (
+			mem_wb_rd == d_rs1 || 
+			mem_wb_rd == d_rs2
+		);
+
+	// Load-use hazard stall enable signal
+	logic load_use_stall_en;
+
 	assign load_use_stall_en = id_ex_memren && 
 		id_ex_rd != 5'b0 && (
 			id_ex_rd == d_rs1 ||
 			(id_ex_rd == d_rs2 && !memwren_o) // do not stall store instructions (can use W/M bypass)
 		);
 		
+	assign stall_en = wd_stall_en | load_use_stall_en;
+	
 	// ---------------------------------------------------------
 	// Register File
 	// ---------------------------------------------------------
@@ -283,8 +303,8 @@ module pd5 #(
 
 	// ID/EX pipeline register logic
 	always_ff @(posedge clk or posedge reset) begin : id_ex_pipeline_reg
-		if (reset || load_use_stall_en) begin
-			// Insert bubble into ID/EX on load-use hazard stall
+		if (reset || stall_en) begin
+			// Insert bubble into ID/EX on load-use or WD hazard stall
 			id_ex_pc <= 32'b0;
 
 			id_ex_opcode <= 7'b0;
@@ -325,8 +345,8 @@ module pd5 #(
 	end
 
 	always_ff @(posedge clk or posedge reset) begin : id_ex_control_pipeline_reg
-		if (reset || load_use_stall_en) begin // || f_pcsel_i might not be needed due to NOP insertion
-			// Flush control signals on load-use hazard stall
+		if (reset || stall_en) begin // || f_pcsel_i might not be needed due to NOP insertion
+			// Flush control signals on load-use or WD hazard stall
 			id_ex_pcsel <= 1'b0;
 			id_ex_immsel <= 1'b0;
 			id_ex_regwren <= 1'b0;
